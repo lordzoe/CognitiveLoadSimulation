@@ -14,6 +14,18 @@ public class VisualManager : MonoBehaviour
     [SerializeField]
     private TMP_Text _noText;
 
+    [SerializeField]
+    private TMP_Text _ratingText;
+
+    [SerializeField]
+    private TMP_Text _stimulusText;
+
+    [SerializeField]
+    private TMP_Text _exText;
+
+    [SerializeField]
+    private GameObject _distraction;
+
     //if this is enabled, countdown will begin, and when countdown reaches 0, the text will be removed
     private bool _textIsTemporary;
 
@@ -35,7 +47,11 @@ public class VisualManager : MonoBehaviour
     void Start()
     {
         _mainText.text = "NO TEXT, if this is showing, there is an error";
+        _ratingText.text = "";
         ToggleYesNoText(false);
+        _stimulusText.text = "";
+        _exText.text = "";
+        _distraction.SetActive(false);
     }
 
     // Update is called once per frame
@@ -47,6 +63,38 @@ public class VisualManager : MonoBehaviour
         }
     }
 
+
+    /// <summary>
+    /// Method <c>ShowCurrentStimulus</c> displays active stimulus with 
+    /// </summary>
+    public void ShowCurrentStimulus(MainObjectManager.Stimulus stimulus)
+    {
+        _stimulusText.text = stimulus.ToString();
+    }
+
+    /// <summary>
+    /// Method <c>DoStimulus</c> runs stimulus
+    /// </summary>
+    public void DoStimulus(MainObjectManager.Stimulus stimulus, bool exInputNeeded)
+    {
+        if (stimulus == MainObjectManager.Stimulus.Extrisnic && exInputNeeded)
+        {
+            _exText.text = "Press right click";
+        }
+        else
+        {
+            _exText.text = "";
+        }
+
+        if (stimulus == MainObjectManager.Stimulus.Intrinsic)
+        {
+            _distraction.SetActive(true);
+        }
+        else
+        {
+            _distraction.SetActive(false);
+        }
+    }
 
     /// <summary>
     /// Method <c>HandleTemporaryText</c> Does temporary text switching and counting
@@ -156,7 +204,7 @@ public class VisualManager : MonoBehaviour
     {
         _mainText.text = "Are these molecules non-superimpossible (chiral enatiomers)?";
         _mainText.fontSize = 16;
-        _mainText.transform.position += new Vector3(0, -200, 0);
+        _mainText.transform.localPosition = new Vector3(0, -200, 0);
         ToggleYesNoText(true);
     }
 
@@ -167,10 +215,38 @@ public class VisualManager : MonoBehaviour
     {
         ToggleYesNoText(false);
         _mainText.fontSize = 36;
-        _mainText.transform.position += new Vector3(0, 200, 0);
+        _mainText.transform.localPosition = new Vector3(0, 0, 0);
         _mainText.text = "Thank you";
+        _ratingText.text = "";
     }
 
+
+    /// <summary>
+    /// Method <c>RunFeedback</c> Visuals for the feedback section
+    /// </summary>
+    public void RunFeedback()
+    {
+        ToggleYesNoText(false);
+        _mainText.fontSize = 16;
+        _mainText.transform.localPosition = new Vector3(0, 200, 0);
+        _mainText.text = "Please rate factor X from 1 to 7";
+        _ratingText.text = "1	2	3	4	5	6	7";
+        _stimulusText.text = "";
+        _distraction.SetActive(false);
+
+    }
+
+    /// <summary>
+    /// Method <c>RunPostExperiment</c> Does the visual action for post experiment.
+    /// </summary>
+    public void RunPostExperiment()
+    {
+        _mainText.text = "Thank you for participating in this experiment please remove your headset/follow instructions from the experimenter";
+        _ratingText.text = "";
+        _mainText.fontSize = 36;
+        _mainText.transform.localPosition = new Vector3(0, 0, 0);
+        ClearTemporaryTextPieces();
+    }
 
 
     private void ToggleYesNoText(bool on)
@@ -186,6 +262,7 @@ public class VisualManager : MonoBehaviour
             _noText.text = "";
         } 
     }
+
         
 
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Text ;
 using System.IO ;
-using System ; 
+using System ;
 
 public class MainObjectManager : MonoBehaviour
 {
@@ -15,12 +15,11 @@ public class MainObjectManager : MonoBehaviour
 
 
     [Tooltip("This controls if the first set of tests is a control or experimental group. To be controlled by researcher.")]
-    public bool ControlFirst = true;
+    public bool ControlFirst;
 
-    [Tooltip("Controls experimental condition type \n 0 = Intrinsic \n 1 = Extrinsic \n To be controlled by researcher.")]
-    public int ExperimentalCondition = 0;
+   [Tooltip("Controls experimental condition type \n false = Intrinsic \n true = Extrinsic \n To be controlled by researcher.")]
+    public bool ConditionIsExtrisinsic;
 
-    
 
     [Tooltip("Containing list of all models used for testing \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
     public List<TestingObject> OrderedListOfTestObjects;
@@ -45,9 +44,31 @@ public class MainObjectManager : MonoBehaviour
         PostExperiment
     }
 
+    public enum Stimulus
+    {
+        Control,
+        Extrisnic,
+        Intrinsic
+    }
+
     public Phase phase;
 
+    public Stimulus activeStimulus;
+
     private Phase _previousPhase;
+
+    /*[SerializeField]
+    //determines if the assignement of interventions is random (true) or determined by researcher (false)
+    private bool _randomAssignmentOfInterventions = true; 
+
+    [SerializeField]
+    //holds if the intervention will be Exstrinsic (true) or instrinsic (false)
+    private bool _isInterventionEx;
+
+    [SerializeField]
+    //holds if the intervention will be in the First half (true) or second half (false)
+    private bool _isInterventionFirst;*/
+
 
     //Is the experiment running? (better catch it!!) NOTE: This will remain true even during feedback periods of the experiment
     public bool ExperimentRunning = false;
@@ -55,8 +76,11 @@ public class MainObjectManager : MonoBehaviour
     //When this bool is primed, the next click in input will switch phase to the feedback phase.
     public bool TimeForFeedback = false;
 
-    
-    
+    //When this bool is true, requires user to to do input 
+    public bool ExInputNeeded = false;
+
+    //stores time since ExInput was asked (ie how long does it take user 
+    private int _timeSinceExInput = 0; 
 
     [SerializeField]
     private VisualManager _visualManager;
@@ -73,12 +97,37 @@ public class MainObjectManager : MonoBehaviour
     void Start()
     {
         phase = Phase.Start;
+        if (UseRandomAssignment)
+        {
+            if (UnityEngine.Random.value > 0.5f)
+            {
+                ConditionIsExtrisinsic = true;
+            }
+            else
+            {
+                ConditionIsExtrisinsic = true;
+
+            }
+            if (UnityEngine.Random.value > 0.5f)
+            {
+                ControlFirst = true;
+            }
+            else
+            {
+                ControlFirst = false;
+
+            }
+        }
     }
 
     // Update is called once per frame
     void Update()
     {
         CheckPhase();
+        if (ExInputNeeded)
+        {
+            _timeSinceExInput++;
+        }
         if (BetweenTrials)
         {
             if (_betweenTrialCountdown > 0)
@@ -93,6 +142,30 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
+
+
+    /// <summary>
+    /// Method <c>DetermineStimulusPhase</c> Sets Stimulus based on current settings. 
+    /// </summary>
+    void DetermineStimulusPhase()
+    {
+        if (!ControlFirst && _sectionCounter==1 || ControlFirst && _sectionCounter == 2)
+        {
+            if (ConditionIsExtrisinsic)
+            {
+                activeStimulus = Stimulus.Extrisnic;
+            }
+            else
+            {
+                activeStimulus = Stimulus.Intrinsic;
+
+            }
+        }
+        else
+        {
+            activeStimulus = Stimulus.Control;
+        }
+    }
     /// <summary>
     /// Method <c>CheckPhase</c> Looks what the current phase is, and takes actions based on that. 
     /// </summary>
@@ -108,15 +181,15 @@ public class MainObjectManager : MonoBehaviour
             switch (phase)
             {
                 case Phase.Start:
-                    
+
                     break;
 
                 case Phase.Calibration:
-                    
+
                     break;
 
                 case Phase.Introduction:
-                    
+
                     break;
 
                 case Phase.PreExperimental:
@@ -124,8 +197,21 @@ public class MainObjectManager : MonoBehaviour
                     break;
 
                 case Phase.Experimental:
+                    DetermineStimulusPhase();
+                    _visualManager.ShowCurrentStimulus(activeStimulus);
+                    if (!ExInputNeeded) {
+                        if (UnityEngine.Random.value > 0.995) //random chance for a input to be needed
+                        {
+                            ExInputNeeded = true;
+                            _timeSinceExInput = 0;
+                        }
+                    }
+                    if (ExperimentRunning)
+                    {
+                        _visualManager.DoStimulus(activeStimulus, ExInputNeeded);
+                    }
 
-                    break;                
+                    break;
 
                 case Phase.Feedback:
 
@@ -139,7 +225,7 @@ public class MainObjectManager : MonoBehaviour
                     break;
             }
         }
-        
+
     }
 
     /// <summary>
@@ -165,15 +251,19 @@ public class MainObjectManager : MonoBehaviour
                 break;
 
             case Phase.Experimental:
-                _visualManager.RunExperimentIntro();
+                if (!ExperimentRunning)
+                {
+                    _visualManager.RunExperimentIntro();
+                }
                 break;
 
             case Phase.Feedback:
+                _visualManager.RunFeedback();
 
                 break;
 
             case Phase.PostExperiment:
-
+                _visualManager.RunPostExperiment();
                 break;
             default:
                 Debug.LogError("YOU SHOULD NOT BE HERE CHECK CODE");
@@ -189,7 +279,7 @@ public class MainObjectManager : MonoBehaviour
         ExperimentRunning = true;
         _visualManager.RunExperimentQuestionText();
         RunTrial();
-        
+
     }
 
 
@@ -237,8 +327,11 @@ public class MainObjectManager : MonoBehaviour
     /// </summary>
     public void SetBetweenTrials()
     {
-        Destroy(this.transform.GetChild(1).gameObject);
-        Destroy(this.transform.GetChild(0).gameObject);
+        if (this.transform.childCount > 0)
+        {
+            Destroy(this.transform.GetChild(1).gameObject);
+            Destroy(this.transform.GetChild(0).gameObject);
+        }
         BetweenTrials = true;
         _betweenTrialCountdown = 100;
         _visualManager.RunBetweenTrials();
@@ -254,21 +347,55 @@ public class MainObjectManager : MonoBehaviour
         {
             Debug.Log("Time for Feeback");
             TimeForFeedback = true;
-            phase = MainObjectManager.Phase.Feedback;
+            phase = Phase.Feedback;
         }
         else
         {
             _visualManager.RunExperimentQuestionText();
             RunTrial();
         }
+    }
+
+    /// <summary>
+    /// Method <c>GetFeedback</c> Recieves participant answer in form of<paramref name="mouseX"/> and records the rating (TODO)
+    /// <param name="mouseX"> Is the mouseX position, used to calculate the answer </param>
+    /// </summary>
+    public void GetFeedback(float mouseX)
+    {
+        float score = mouseX / Screen.width * 7.0f;
+        Debug.Log(score);
+        TimeForFeedback = false;
+        _trialCounter = 0;
+        _sectionCounter++;
+        if (_sectionCounter > NumberofSections)
+        {
+            phase = Phase.PostExperiment;
+        }
+        else
+        {
+            SetBetweenTrials();
+            phase = Phase.Experimental;
+        }
+
+    }
 
 
-
+    /// <summary>
+    /// Method <c>ExInputCheck</c> Run when there is a input for the extrinsic stimulus and print out how long since extrisinc stimulus
+    /// </summary>
+    public void ExInputCheck()
+    {
+        if (ExInputNeeded)
+        {
+            ExInputNeeded = false;
+            Debug.Log(_timeSinceExInput);
+            _timeSinceExInput = 0;
+        }
     }
 
     private int GetIndexFromTrialAndSection()
     {
-        Debug.Log(String.Format("Number of trials per Section = {0}, \n Current Section = {1}, \n trial number for this section = {2}", NumberOfTrialsPerSection, _sectionCounter, _trialCounter));
+        Debug.Log(String.Format("Number of trials per Section = {0}, Current Section = {1}, trial number for this section = {2}", NumberOfTrialsPerSection, _sectionCounter, _trialCounter));
 
         return _trialCounter+(NumberOfTrialsPerSection * (_sectionCounter-1)) - 1;
     }

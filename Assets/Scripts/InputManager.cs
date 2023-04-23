@@ -18,24 +18,21 @@ public class InputManager : MonoBehaviour
     {
 
         if (Input.GetMouseButtonDown(0))
-            RunClick();
+            RunMainClick();
 
-        if (Input.GetMouseButtonDown(0))
-        {
 
-        }
 
         if (Input.GetMouseButtonDown(1))
-            Debug.Log("Pressed secondary button.");
+            RunSecClick();
 
         if (Input.GetMouseButtonDown(2))
             Debug.Log("Pressed middle click.");
     }
 
     /// <summary>
-    /// Method <c>RunClick</c> Runs the results of clicks
+    /// Method <c>RunMainClick</c> Runs the results of left clicks
     /// </summary>
-    void RunClick()
+    void RunMainClick()
     {
         Debug.Log("Pressed primary button.");
         Vector3 mousePos = Input.mousePosition;
@@ -85,6 +82,7 @@ public class InputManager : MonoBehaviour
                 break;
 
             case MainObjectManager.Phase.Feedback:
+                _mainObjectManager.GetFeedback(mousePos.x);
 
                 break;
 
@@ -98,6 +96,18 @@ public class InputManager : MonoBehaviour
 
 
         //CheckStart(); //less efficient memory and effort wise than putting a if statement here, but its easier to read visually. 
+    }
+
+
+    /// <summary>
+    /// Method <c>RunSecClick</c> Runs the results of right click
+    /// </summary>
+    void RunSecClick()
+    {
+        if (_mainObjectManager.phase == MainObjectManager.Phase.Experimental)
+        {
+            _mainObjectManager.ExInputCheck();
+        }
     }
 
 
@@ -139,6 +149,8 @@ public class InputManager : MonoBehaviour
         _mainObjectManager.BeginExperiment();
     }
 
+    
+
     //STC PERHAPS THE ABOVE METHODS COULD BE REDUCED TO ONE, ADVANCE PHASE, BUT FOR RIGHT NOW IM KEEPING IT AS GENERAL AS POSSIBLE.
     // yes it is inefficient, but these are like almost abstract methods right now, and i suspect they will be much more full by the end of things
 
@@ -176,7 +188,7 @@ public class InputManager : MonoBehaviour
             }
             Debug.Log("left(1) or right(0)?  "+leftOrRight);
             _mainObjectManager.AnswerQuestion(leftOrRight);
-        _mainObjectManager.SetBetweenTrials();
+            _mainObjectManager.SetBetweenTrials();
     }
 
 
