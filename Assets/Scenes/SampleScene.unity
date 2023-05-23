@@ -1295,7 +1295,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   UseRandomAssignment: 0
   ControlFirst: 0
-  ConditionIsExtrisinsic: 0
+  ConditionIsExtrisinsic: 1
   OrderedListOfTestObjects:
   - {fileID: 8471695599777550636, guid: d18cbacea27134de1b9a2d7c41163dab, type: 3}
   - {fileID: 8471695599777550636, guid: 468f41e8533bd48fe8f7dbfc8064fb43, type: 3}
