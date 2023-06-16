@@ -18,7 +18,7 @@ public class IntrinsicAudioPlayer : MonoBehaviour
 
     private int _numIntTillNextTrig;
     private int _numIntSinceLastTrig;
-    private bool _lastIntWasTrig = false;
+    private bool _lastIntWasTrig = true;
 
 
     //private int _c = 0;
@@ -30,7 +30,7 @@ public class IntrinsicAudioPlayer : MonoBehaviour
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
-        //StartIntrinsicAudio(3f, 5, 2);
+        StartIntrinsicAudio(3f, 5, 2);
     }
 
     void Update()
@@ -68,10 +68,11 @@ public class IntrinsicAudioPlayer : MonoBehaviour
     public void StartIntrinsicAudio(float intervalTime, int averageIntervalsForTrigger, int minAndMaxRange)
     {
         InvokeRepeating("PlayAudioWithRandomChance", 0f, intervalTime);
+        Debug.Log("hello");
         _avgIntTrig = averageIntervalsForTrigger;
-        _minIntTrig = averageIntervalsForTrigger-minAndMaxRange;
+        _minIntTrig = averageIntervalsForTrigger - minAndMaxRange;
         _maxIntTrig = averageIntervalsForTrigger + minAndMaxRange;
-        
+
     }
 
     /// <summary>
@@ -85,22 +86,35 @@ public class IntrinsicAudioPlayer : MonoBehaviour
     /// <summary>
     /// Method <c>PlayAudioWithRandomChance</c> Plays an audio file either randomly selected from array, or on random chance, a trigger audio.
     /// If trigger audio is played, flag it with a bool and record time of play
+    /// Importantly, the time till next trig, doesnt include the just played audio so if A is said, and then the next cue should be in 4, it will go for example, T,D,G,L. 
     /// </summary>
     void PlayAudioWithRandomChance()
     {
         if (_lastIntWasTrig)
         {
             _numIntTillNextTrig = CalculateNextTrig();
+            _lastIntWasTrig = false;
+            Debug.Log(_numIntTillNextTrig);
+        }
+
+        if (_numIntTillNextTrig == _numIntSinceLastTrig)
+        {
+            audioSource.PlayOneShot(Trigger);
+            _numIntSinceLastTrig = 0;
+            _lastIntWasTrig = true;
         }
         else
         {
-
+            audioSource.PlayOneShot(FillerAudio[Mathf.FloorToInt(UnityEngine.Random.value * FillerAudio.Length)]); ;
+            _numIntSinceLastTrig++;
         }
-        audioSource.PlayOneShot(FillerAudio[Mathf.FloorToInt(UnityEngine.Random.value*FillerAudio.Length)]);;
+
+
     }
 
     /// <summary>
     /// Method <c>CalculateNextTrig</c> calculates how many intervals until the next trig using the BoxMuller distrubution
+    /// 
     /// </summary>
     int CalculateNextTrig()
     {

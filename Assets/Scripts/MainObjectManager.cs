@@ -14,23 +14,31 @@ public class MainObjectManager : MonoBehaviour
     public bool UseRandomAssignment = false;
 
 
-    [Tooltip("This controls if the first set of tests is a control or experimental group. To be controlled by researcher.")]
+    [Tooltip("This controls if the first set of tests is a control or experimental group. To be controlled by researcher, or randomized.")]
     public bool ControlFirst;
 
-   [Tooltip("Controls experimental condition type \n false = Intrinsic \n true = Extrinsic \n To be controlled by researcher.")]
+   [Tooltip("Controls experimental condition type \n false = Intrinsic \n true = Extrinsic \n To be controlled by researcher, or randomized.")]
     public bool ConditionIsExtrisinsic;
 
+    [Tooltip("Controls Experimental Order of A/B group \n false = B First \n true = A first \n To be controlled by researcher, or randomized.")]
 
-    [Tooltip("Containing list of all models used for testing \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
-    public List<TestingObject> OrderedListOfTestObjects;
+    public bool GroupAFirst;
+
+
+    [Tooltip("Containing list of all models used for group A \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
+    public List<TestingObject> GroupAOrderedListObjects;
+
+    [Tooltip("Containing list of all models used for group B \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
+
+    public List<TestingObject> GroupBOrderedListObjects;
 
 
 
     //Number of trials per section
-    public int NumberOfTrialsPerSection = 2;
+    public int NumberOfTrialsPerSection = 4;
 
-    //Number of sections. (Should be 2).
-    public int NumberofSections = 2;
+    public bool BetweenTrials = false;
+
 
     public enum Phase
     {
@@ -87,11 +95,14 @@ public class MainObjectManager : MonoBehaviour
 
     //Which of the questions (trial) the experiment is on (goes from 1 to NumberOfSections*NumberOfTrials, inclusive).
     private int _trialCounter = 1;
-    //Which section (first or second) the experiment is on (should remain on either 1 or 2).
-    private int _sectionCounter = 1;
+   
+    //Holds if the expriement is in the first phase or the second phase (regardless of if that is A or B)
+    private bool _experimentInFirstPhase = true;
 
     private int _betweenTrialCountdown = 0;
-    public bool BetweenTrials = false;
+
+    //Holds the active testing object 
+    private TestingObject _activeTestingObject = null;
 
     // Start is called before the first frame update
     void Start()
@@ -117,7 +128,20 @@ public class MainObjectManager : MonoBehaviour
                 ControlFirst = false;
 
             }
+
+            if (UnityEngine.Random.value > 0.5f)
+            {
+                GroupAFirst = true;
+            }
+            else
+            {
+                GroupAFirst = false;
+
+            }
         }
+        GroupAOrderedListObjects[6].ProduceObjects();
+        
+        
     }
 
     // Update is called once per frame
@@ -140,6 +164,8 @@ public class MainObjectManager : MonoBehaviour
                 NextTrial();
             }
         }
+
+        GroupAOrderedListObjects[6].testRot();
     }
 
 
@@ -149,8 +175,10 @@ public class MainObjectManager : MonoBehaviour
     /// </summary>
     void DetermineStimulusPhase()
     {
-        if (!ControlFirst && _sectionCounter==1 || ControlFirst && _sectionCounter == 2)
+        if (!ControlFirst && _experimentInFirstPhase || ControlFirst && !_experimentInFirstPhase) // checking if the phase should have a control or stimulus
         {
+
+            // and sets it to the proper stimulus
             if (ConditionIsExtrisinsic)
             {
                 activeStimulus = Stimulus.Extrisnic;
@@ -158,7 +186,6 @@ public class MainObjectManager : MonoBehaviour
             else
             {
                 activeStimulus = Stimulus.Intrinsic;
-
             }
         }
         else
@@ -167,7 +194,7 @@ public class MainObjectManager : MonoBehaviour
         }
     }
     /// <summary>
-    /// Method <c>CheckPhase</c> Looks what the current phase is, and takes actions based on that. 
+    /// Method <c>CheckPhase</c> Looks what the current phase is, and takes actions based on that. These are actions that are required every update.
     /// </summary>
     void CheckPhase()
     {
@@ -199,17 +226,17 @@ public class MainObjectManager : MonoBehaviour
                 case Phase.Experimental:
                     DetermineStimulusPhase();
                     _visualManager.ShowCurrentStimulus(activeStimulus);
-                    if (!ExInputNeeded) {
-                        if (UnityEngine.Random.value > 0.995) //random chance for a input to be needed
-                        {
-                            ExInputNeeded = true;
-                            _timeSinceExInput = 0;
-                        }
-                    }
-                    if (ExperimentRunning)
-                    {
-                        _visualManager.DoStimulus(activeStimulus, ExInputNeeded);
-                    }
+                    //if (!ExInputNeeded) {
+                    //    if (UnityEngine.Random.value > 0.995) //random chance for a input to be needed
+                    //    {
+                    //        ExInputNeeded = true;
+                    //        _timeSinceExInput = 0;
+                    //    }
+                    //}
+                    //if (ExperimentRunning)
+                    //{
+                    //    _visualManager.DoStimulus(activeStimulus, ExInputNeeded);
+                    //}
 
                     break;
 
@@ -289,7 +316,16 @@ public class MainObjectManager : MonoBehaviour
     /// </summary>
     void RunTrial()
     {
-        OrderedListOfTestObjects[GetIndexFromTrialAndSection()].ProduceObjects();//STC idk if trial number needs to be passed, as it is currently avaliable by the class...
+        if ((_experimentInFirstPhase && GroupAFirst) || (!_experimentInFirstPhase && !GroupAFirst)) // the two situations where it should be showing group A
+        {
+            _activeTestingObject = GroupAOrderedListObjects[_trialCounter];
+            _activeTestingObject.ProduceObjects();
+        }
+        else //otherwise it must be group B
+        {
+            _activeTestingObject = GroupBOrderedListObjects[_trialCounter];
+            _activeTestingObject.ProduceObjects();
+        }
     }
 
     /// <summary>
@@ -303,13 +339,13 @@ public class MainObjectManager : MonoBehaviour
         {
             didTheyAnswerYes = true;
         }
-        else
+        else //NOTE: CAN I GET RID OF THIS INT CONVERSION BULLSHIT?
         {
             didTheyAnswerYes = false;
         }
         bool isCorrect;
 
-        if (didTheyAnswerYes != OrderedListOfTestObjects[GetIndexFromTrialAndSection()].SuperimposableMirrorImage)
+        if (didTheyAnswerYes != _activeTestingObject.Superimposable)
         {
             isCorrect = true;
         }
@@ -318,7 +354,7 @@ public class MainObjectManager : MonoBehaviour
             isCorrect = false;
         }
         Debug.Log("did they answer yes? " + didTheyAnswerYes);
-        Debug.Log("is it superimpossible/achiral? " + OrderedListOfTestObjects[GetIndexFromTrialAndSection()].SuperimposableMirrorImage);
+        Debug.Log("is it superimpossible/achiral? " + _activeTestingObject.Superimposable);
         Debug.Log("were they correct?? " + isCorrect);//EVETUALLY THIS WILL GO TO A CSV FILE
     }
 
@@ -366,15 +402,15 @@ public class MainObjectManager : MonoBehaviour
         Debug.Log(score);
         TimeForFeedback = false;
         _trialCounter = 0;
-        _sectionCounter++;
-        if (_sectionCounter > NumberofSections)
+        if (_experimentInFirstPhase)
         {
-            phase = Phase.PostExperiment;
+            _experimentInFirstPhase = false;
+            SetBetweenTrials();
+            phase = Phase.Experimental;
         }
         else
         {
-            SetBetweenTrials();
-            phase = Phase.Experimental;
+            phase = Phase.PostExperiment;
         }
 
     }
@@ -393,10 +429,10 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
-    private int GetIndexFromTrialAndSection()
-    {
-        Debug.Log(String.Format("Number of trials per Section = {0}, Current Section = {1}, trial number for this section = {2}", NumberOfTrialsPerSection, _sectionCounter, _trialCounter));
+    //private int GetIndexFromTrialAndSection()
+    //{
+    //    Debug.Log(String.Format("Number of trials per Section = {0}, Current Section = {1}, trial number for this section = {2}", NumberOfTrialsPerSection, _sectionCounter, _trialCounter));
 
-        return _trialCounter+(NumberOfTrialsPerSection * (_sectionCounter-1)) - 1;
-    }
+    //    return _trialCounter+(NumberOfTrialsPerSection * (_sectionCounter-1)) - 1;
+    //}
 }
