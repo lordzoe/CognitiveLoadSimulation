@@ -1,0 +1,6 @@
+Answers
+Time Question Shown , Time Question Answered , Time Difference, Was Answer Correct?, Stimulus Type, Question Name 
+5.002758,19.46541,14.46266,True,Intrinsic,A1M_C_SI_R180x(Clone)
+20.24435,20.31699,0.07263374,True,Intrinsic,A2M_C_SI_R180y(Clone)
+22.49008,22.66632,0.1762428,True,Intrinsic,A3M_C_SI_R120z(Clone)
+23.37189,23.94974,0.5778465,False,Intrinsic,A4M_C_NSI_R180x(Clone)

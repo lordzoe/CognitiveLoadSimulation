@@ -17,7 +17,7 @@ public class MainObjectManager : MonoBehaviour
     [Tooltip("This controls if the first set of tests is a control or experimental group. To be controlled by researcher, or randomized.")]
     public bool ControlFirst;
 
-   [Tooltip("Controls experimental condition type \n false = Intrinsic \n true = Extrinsic \n To be controlled by researcher, or randomized.")]
+    [Tooltip("Controls experimental condition type \n false = Intrinsic \n true = Extrinsic \n To be controlled by researcher, or randomized.")]
     public bool ConditionIsExtrisinsic;
 
     [Tooltip("Controls Experimental Order of A/B group \n false = B First \n true = A first \n To be controlled by researcher, or randomized.")]
@@ -33,9 +33,25 @@ public class MainObjectManager : MonoBehaviour
     public List<TestingObject> GroupBOrderedListObjects;
 
 
+    public List<AnswerData> Answers = new List<AnswerData>();
+
+    //instrinsic data stuff
+    public List<ClickData> Clicks = new List<ClickData>();
+
+    public List<AudioTriggerData> AudioTD = new List<AudioTriggerData>();
+
+    public List<FeedbackData> Feedback = new List<FeedbackData>();
+
+    [Tooltip("This variable sets the max time allowed for a response to an intrinsic audio cue, after which a click will be flagged as too late")]
+    public float MaxTimeForResponse = 4f; 
+
 
     //Number of trials per section
-    public int NumberOfTrialsPerSection = 4;
+    public int NumberOfTrialsPerSection;
+
+    //Number of trials per sub-section (controls mid group feedbackphase)
+    public int NumberOfTrialsPerSubSection;
+
 
     public bool BetweenTrials = false;
 
@@ -61,7 +77,7 @@ public class MainObjectManager : MonoBehaviour
 
     public Phase phase;
 
-    public Stimulus activeStimulus;
+    public Stimulus ActiveStimulus;
 
     private Phase _previousPhase;
 
@@ -88,21 +104,53 @@ public class MainObjectManager : MonoBehaviour
     public bool ExInputNeeded = false;
 
     //stores time since ExInput was asked (ie how long does it take user 
-    private int _timeSinceExInput = 0; 
+    private int _timeSinceExInput = 0;
 
     [SerializeField]
     private VisualManager _visualManager;
 
-    //Which of the questions (trial) the experiment is on (goes from 1 to NumberOfSections*NumberOfTrials, inclusive).
-    private int _trialCounter = 1;
-   
+    [SerializeField]
+    private IntrinsicAudioPlayer _intrinsicAudioPlayer;
+
+    private int _trialCounter = 0;
+
+    private int _trialSubCounter = 0;
+
+    private bool _onSubFeedback = false;
+
     //Holds if the expriement is in the first phase or the second phase (regardless of if that is A or B)
     private bool _experimentInFirstPhase = true;
 
     private int _betweenTrialCountdown = 0;
 
+    //checks if the stimulus type JUST changed, and allowing for only single runs of some methods
+    private bool _FirstChange = true;
+
     //Holds the active testing object 
     private TestingObject _activeTestingObject = null;
+
+
+    //FILE INFOS
+    private string fileNameClicks = "clicks";
+
+    private string fileNameAnswers = "answers";
+
+    private string fileNameAudio = "audioTriggers";
+
+    private string fileNameFeedback = "feedback";
+
+
+    private string fileNameCollated = "dataTogether";
+
+
+
+    private string dateInfo;
+
+
+    
+
+
+
 
     // Start is called before the first frame update
     void Start()
@@ -139,9 +187,20 @@ public class MainObjectManager : MonoBehaviour
 
             }
         }
-        GroupAOrderedListObjects[6].ProduceObjects();
         
-        
+
+        BeginCSVFiles();
+        /*using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileName + dateInfo + ".csv"))
+        {
+
+           // data.WriteLine("Clicks, , , , , , Audio Cues");
+            data.WriteLine("5 , Click, 3.5, 1.5, , , 3.5 ");
+            data.Flush();
+        }*/ //test showing that you can write below easily 
+
+        GroupAOrderedListObjects[6].ProduceObjects(); //DELETE
+
+
     }
 
     // Update is called once per frame
@@ -150,7 +209,7 @@ public class MainObjectManager : MonoBehaviour
         CheckPhase();
         if (ExInputNeeded)
         {
-            _timeSinceExInput++;
+            _timeSinceExInput++; //DELETE
         }
         if (BetweenTrials)
         {
@@ -165,7 +224,7 @@ public class MainObjectManager : MonoBehaviour
             }
         }
 
-        GroupAOrderedListObjects[6].testRot();
+        GroupAOrderedListObjects[6].testRot(); 
     }
 
 
@@ -181,16 +240,17 @@ public class MainObjectManager : MonoBehaviour
             // and sets it to the proper stimulus
             if (ConditionIsExtrisinsic)
             {
-                activeStimulus = Stimulus.Extrisnic;
+                ActiveStimulus = Stimulus.Extrisnic;
+                
             }
             else
             {
-                activeStimulus = Stimulus.Intrinsic;
+                ActiveStimulus = Stimulus.Intrinsic;
             }
         }
         else
         {
-            activeStimulus = Stimulus.Control;
+            ActiveStimulus = Stimulus.Control;
         }
     }
     /// <summary>
@@ -225,7 +285,8 @@ public class MainObjectManager : MonoBehaviour
 
                 case Phase.Experimental:
                     DetermineStimulusPhase();
-                    _visualManager.ShowCurrentStimulus(activeStimulus);
+                    _visualManager.ShowCurrentStimulus(ActiveStimulus);
+
                     //if (!ExInputNeeded) {
                     //    if (UnityEngine.Random.value > 0.995) //random chance for a input to be needed
                     //    {
@@ -286,7 +347,7 @@ public class MainObjectManager : MonoBehaviour
 
             case Phase.Feedback:
                 _visualManager.RunFeedback();
-
+                Feedback.Add(new FeedbackData(Time.time, ActiveStimulus.ToString()));
                 break;
 
             case Phase.PostExperiment:
@@ -306,7 +367,7 @@ public class MainObjectManager : MonoBehaviour
         ExperimentRunning = true;
         _visualManager.RunExperimentQuestionText();
         RunTrial();
-
+        
     }
 
 
@@ -316,6 +377,14 @@ public class MainObjectManager : MonoBehaviour
     /// </summary>
     void RunTrial()
     {
+
+        if(ActiveStimulus==Stimulus.Intrinsic)
+        {
+            if (!_intrinsicAudioPlayer.AudioOn)
+            {
+                _intrinsicAudioPlayer.StartIntrinsicAudio(3f, 5, 2);
+            }
+        }
         if ((_experimentInFirstPhase && GroupAFirst) || (!_experimentInFirstPhase && !GroupAFirst)) // the two situations where it should be showing group A
         {
             _activeTestingObject = GroupAOrderedListObjects[_trialCounter];
@@ -326,6 +395,10 @@ public class MainObjectManager : MonoBehaviour
             _activeTestingObject = GroupBOrderedListObjects[_trialCounter];
             _activeTestingObject.ProduceObjects();
         }
+
+        Answers.Add(new AnswerData(Time.time, ActiveStimulus.ToString(),_activeTestingObject.Model1.name));
+        _trialCounter++;
+        _trialSubCounter++;
     }
 
     /// <summary>
@@ -353,13 +426,17 @@ public class MainObjectManager : MonoBehaviour
         {
             isCorrect = false;
         }
+        Answers[Answers.Count - 1].TimeAnswerGiven = Time.time;
+        Answers[Answers.Count - 1].CalcTimeDiff();
+        Answers[Answers.Count - 1].AnswerCorrect = isCorrect;
+
         Debug.Log("did they answer yes? " + didTheyAnswerYes);
         Debug.Log("is it superimpossible/achiral? " + _activeTestingObject.Superimposable);
         Debug.Log("were they correct?? " + isCorrect);//EVETUALLY THIS WILL GO TO A CSV FILE
     }
 
     /// <summary>
-    /// Method <c>SetBetweenTrials</c> Puts program between trials
+    /// Method <c>SetBetweenTrials</c> Puts program between trials (clears off the old game objects, and adds a short pause before starting next trial)
     /// </summary>
     public void SetBetweenTrials()
     {
@@ -369,7 +446,7 @@ public class MainObjectManager : MonoBehaviour
             Destroy(this.transform.GetChild(0).gameObject);
         }
         BetweenTrials = true;
-        _betweenTrialCountdown = 100;
+        _betweenTrialCountdown = 30;
         _visualManager.RunBetweenTrials();
     }
 
@@ -377,41 +454,72 @@ public class MainObjectManager : MonoBehaviour
     /// Method <c>NextTrial</c> Moves the experiment to the next trial
     /// </summary>
     public void NextTrial() {
-        Debug.Log("running next trial");
-        _trialCounter++;
-        if (_trialCounter > NumberOfTrialsPerSection)
+       
+        if (_trialCounter == NumberOfTrialsPerSection)
         {
-            Debug.Log("Time for Feeback");
+            Debug.Log("Time for Feeback "+_trialCounter+"__"+NumberOfTrialsPerSection);
             TimeForFeedback = true;
             phase = Phase.Feedback;
+            _intrinsicAudioPlayer.StopIntrinsicAudio();
+
         }
-        else
+        else if (_trialSubCounter == NumberOfTrialsPerSubSection)
+        {
+            Debug.Log("Time for Feeback micro version " + _trialSubCounter + "__" + NumberOfTrialsPerSubSection);
+
+            TimeForFeedback = true;
+            phase = Phase.Feedback;
+            _onSubFeedback = true;
+            _intrinsicAudioPlayer.StopIntrinsicAudio();
+
+        }
+        else 
         {
             _visualManager.RunExperimentQuestionText();
+            Debug.Log("running next trial " + _trialCounter);
             RunTrial();
         }
     }
 
+
+    //
     /// <summary>
-    /// Method <c>GetFeedback</c> Recieves participant answer in form of<paramref name="mouseX"/> and records the rating (TODO)
+    /// Method <c>GetFeedback</c> NEEDS UPDATE TO ALLOW FOR INBETWEE ADDS Recieves participant answer in form of<paramref name="mouseX"/> and records the rating (TODO)
     /// <param name="mouseX"> Is the mouseX position, used to calculate the answer </param>
     /// </summary>
     public void GetFeedback(float mouseX)
     {
         float score = mouseX / Screen.width * 7.0f;
         Debug.Log(score);
+        Feedback[Feedback.Count - 1].Score = score;
+        Feedback[Feedback.Count - 1].TimeEnd = Time.time;
+        Feedback[Feedback.Count - 1].CalcTimeDiff();
+
         TimeForFeedback = false;
-        _trialCounter = 0;
-        if (_experimentInFirstPhase)
+        if (_onSubFeedback)
         {
-            _experimentInFirstPhase = false;
             SetBetweenTrials();
             phase = Phase.Experimental;
         }
         else
         {
-            phase = Phase.PostExperiment;
+
+            _trialCounter = 0;
+            if (_experimentInFirstPhase)
+            {
+                _experimentInFirstPhase = false;
+                SetBetweenTrials();
+                phase = Phase.Experimental;
+                LogCSVData();
+            }
+            else
+            {
+                phase = Phase.PostExperiment;
+            }
         }
+        _trialSubCounter = 0;
+        _onSubFeedback = false;
+        
 
     }
 
@@ -429,6 +537,182 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Method <c>BeginCSVFile</c> Does the intro aspects of starting a CSV file, such as producing the file and adding the headers
+    /// 
+    /// </summary>
+    void BeginCSVFiles()
+    {
+        dateInfo = "___" + System.DateTime.Now.Year.ToString() + "_" + System.DateTime.Now.Month.ToString() + "_" + System.DateTime.Now.Day.ToString() + "_" + System.DateTime.Now.Hour.ToString() + "_" + System.DateTime.Now.Minute.ToString() + "_" + System.DateTime.Now.Second.ToString();
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAnswers + dateInfo + ".csv"))
+        {
+            data.WriteLine("Answers");
+            data.WriteLine("Time Question Shown , Time Question Answered , Time Difference, Was Answer Correct?, Stimulus Type, Question Name ");
+            data.Flush();
+        }
+
+
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameClicks + dateInfo + ".csv"))
+        {
+
+            data.WriteLine("Clicks");
+            data.WriteLine("Time , Nearest AudioCue Time, Time Difference, Was it a Valid Click?, Click Within Max Time? ");
+            data.Flush();
+        }
+
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAudio + dateInfo + ".csv"))
+        {
+
+            data.WriteLine("Audio");
+            data.WriteLine("Time");
+            data.Flush();
+        }
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameFeedback + dateInfo + ".csv"))
+        {
+
+            data.WriteLine("Feedback");
+            data.WriteLine("Number, Score, Time Answer Given, Time Spent on the Screen, Associated Stimulus Type ");
+            data.Flush();
+        }
+
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameCollated + dateInfo + ".csv"))
+        {
+
+            data.WriteLine("Collated Data");
+            data.WriteLine("Event Time , Event Type, Extra Info ");
+            data.Flush();
+        }
+
+
+
+    }
+
+
+    /// <summary>
+    /// Method <c>LogCSVData</c> Fills out the rest of the CSV files
+    /// 
+    /// </summary>
+    void LogCSVData()
+    {
+
+        Debug.Log("WRITING CSV");
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAnswers + dateInfo + ".csv"))
+        {
+            foreach(AnswerData aD in Answers)
+            {
+                String toWrite = aD.TimeQuestionShown + "," + aD.TimeAnswerGiven + "," + aD.TimeDiff + "," + aD.AnswerCorrect + "," + aD.StimulusType + "," + aD.QuestionName;
+                data.WriteLine(toWrite) ;
+            }
+            data.Flush();
+        }
+
+
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameClicks + dateInfo + ".csv"))
+        {
+
+            foreach(ClickData cD in Clicks)
+            {
+                string toWrite;
+               
+                if (cD.CorrectClick)
+                {
+                    toWrite = cD.Time + "," + cD.TimeOfNearestAudio + "," + cD.TimeToNearestAudio+","+"Yes,"+ !cD.TooSlow;
+                }
+                else
+                {
+                     toWrite = cD.Time + ",N/A,N/A,NO,N/A";
+                }
+                data.WriteLine(toWrite);
+            }
+            data.Flush();
+        }
+
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAudio + dateInfo + ".csv"))
+        {
+
+            data.WriteLine("Audio");
+            data.WriteLine("Time");
+            foreach(AudioTriggerData aTD in AudioTD) {
+                data.WriteLine(aTD.Time);
+            }
+            data.Flush();
+        }
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameFeedback + dateInfo + ".csv"))
+        {
+
+            
+            int num = 1;
+            foreach (FeedbackData fD in Feedback)
+            {
+                String toWrite = num + "," + fD.Score + "," + fD.TimeEnd + "," + fD.TimeDifference + "," + fD.NameOfStimulus;
+                data.WriteLine(toWrite);
+                num++;
+            }
+            
+            data.Flush();
+        }
+
+
+        using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameCollated + dateInfo + ".csv"))
+        {
+
+            data.WriteLine("TODO");
+            data.Flush();
+        }
+    }
+
+
+    /// <summary>
+    /// Method <c>AddClickData</c> Takes the most recent click and does calculations on it versus the last audiotrigger to assign data
+    /// </summary>
+    public void AddClickData()
+    {
+        if (AudioTD.Count != 0)
+        {
+            float nearestTime = AudioTD[AudioTD.Count - 1].Time;
+            float clickTime = Clicks[Clicks.Count - 1].Time;
+            Clicks[Clicks.Count - 1].TimeOfNearestAudio = nearestTime;
+            Clicks[Clicks.Count - 1].TimeToNearestAudio = clickTime - nearestTime;
+            if (Clicks.Count == 1)
+            {
+                Clicks[Clicks.Count - 1].CorrectClick = true;
+            }
+            else
+            {
+                if (Clicks[Clicks.Count - 2].Time < nearestTime)
+                {
+                    Clicks[Clicks.Count - 1].CorrectClick = true;
+                }
+                else
+                {
+                    Clicks[Clicks.Count - 1].CorrectClick = false;
+
+                }
+            }
+            if (Clicks[Clicks.Count - 1].TimeToNearestAudio < MaxTimeForResponse)
+            {
+                Clicks[Clicks.Count - 1].TooSlow = false;
+            }
+            else {
+                Clicks[Clicks.Count - 1].TooSlow = true;
+            }
+        }
+        else
+        {
+            Clicks[Clicks.Count - 1].TimeToNearestAudio = -999;
+            Clicks[Clicks.Count - 1].CorrectClick = false;
+            Clicks[Clicks.Count - 1].TooSlow = false;
+        }
+
+    }
     //private int GetIndexFromTrialAndSection()
     //{
     //    Debug.Log(String.Format("Number of trials per Section = {0}, Current Section = {1}, trial number for this section = {2}", NumberOfTrialsPerSection, _sectionCounter, _trialCounter));

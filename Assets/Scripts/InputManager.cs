@@ -104,9 +104,11 @@ public class InputManager : MonoBehaviour
     /// </summary>
     void RunSecClick()
     {
-        if (_mainObjectManager.phase == MainObjectManager.Phase.Experimental)
+        Debug.Log("Pressed Secondary Button");
+        if (_mainObjectManager.phase == MainObjectManager.Phase.Experimental && _mainObjectManager.ActiveStimulus == MainObjectManager.Stimulus.Intrinsic)
         {
-            _mainObjectManager.ExInputCheck();
+            _mainObjectManager.Clicks.Add(new ClickData(Time.time));
+            _mainObjectManager.AddClickData();
         }
     }
 

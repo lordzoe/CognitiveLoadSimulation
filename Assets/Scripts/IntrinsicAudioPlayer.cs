@@ -1,15 +1,22 @@
 using UnityEngine;
 using System.Collections;
+using System.IO;
 
 [RequireComponent(typeof(AudioSource))]
 public class IntrinsicAudioPlayer : MonoBehaviour
 {
+
+    [SerializeField]
+    private MainObjectManager _mainObjectManager;
+
     public AudioClip[] FillerAudio = new AudioClip[25];
     public AudioClip Trigger;
     AudioSource audioSource;
 
     public bool TriggerCalled = false;
     public float TimeAtTriggerCalled = 0f;
+
+    public bool AudioOn = false;
 
 
     private int _avgIntTrig;
@@ -18,7 +25,7 @@ public class IntrinsicAudioPlayer : MonoBehaviour
 
     private int _numIntTillNextTrig;
     private int _numIntSinceLastTrig;
-    private bool _lastIntWasTrig = true;
+    private bool _lastIntWasTrig;
 
 
     //private int _c = 0;
@@ -30,7 +37,10 @@ public class IntrinsicAudioPlayer : MonoBehaviour
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
-        StartIntrinsicAudio(3f, 5, 2);
+        //StartIntrinsicAudio(3f, 5, 2);
+
+
+
     }
 
     void Update()
@@ -67,19 +77,26 @@ public class IntrinsicAudioPlayer : MonoBehaviour
     /// </summary>
     public void StartIntrinsicAudio(float intervalTime, int averageIntervalsForTrigger, int minAndMaxRange)
     {
+        AudioOn = true;
+        _lastIntWasTrig = true;
+        _numIntSinceLastTrig = 0;
+
         InvokeRepeating("PlayAudioWithRandomChance", 0f, intervalTime);
         Debug.Log("hello");
         _avgIntTrig = averageIntervalsForTrigger;
         _minIntTrig = averageIntervalsForTrigger - minAndMaxRange;
         _maxIntTrig = averageIntervalsForTrigger + minAndMaxRange;
-
     }
+
+    
 
     /// <summary>
     /// Method <c>StopIntrinsicAudio</c> Stops repeating of the PlayAudioWithRandomChance method, which plays the intrinsic audio.
     /// </summary>
     public void StopIntrinsicAudio()
     {
+        AudioOn = false;
+
         CancelInvoke("PlayAudioWithRandomChance");
     }
 
@@ -102,6 +119,7 @@ public class IntrinsicAudioPlayer : MonoBehaviour
             audioSource.PlayOneShot(Trigger);
             _numIntSinceLastTrig = 0;
             _lastIntWasTrig = true;
+            _mainObjectManager.AudioTD.Add(new AudioTriggerData(Time.time));
         }
         else
         {
@@ -120,4 +138,6 @@ public class IntrinsicAudioPlayer : MonoBehaviour
     {
         return Mathf.FloorToInt(RandomBoxMuller.Range(_minIntTrig, _maxIntTrig + 1));
     }
+
+    
 }

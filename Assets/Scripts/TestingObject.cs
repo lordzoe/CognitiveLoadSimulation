@@ -57,7 +57,7 @@ public class TestingObject : MonoBehaviour
 
             //Model1.transform.position += Vector3.left * _distance;
             // Model2.transform.rotation = Quaternion.Euler(_rotationToApply);
-            Model2.transform.RotateAround(this.transform.parent.transform.position, _rotationVec, _rotationToApply);
+            //Model2.transform.RotateAround(this.transform.parent.transform.position, _rotationVec, _rotationToApply);
             //Model2.transform.position += Vector3.right * _distance;
             if (_mirrored)
             {
@@ -86,7 +86,7 @@ public class TestingObject : MonoBehaviour
 
     public void testRot()
     {
-     //   Model2.transform.RotateAround(Model2.transform.position, _rotationVec, 1);
+        Model2.transform.RotateAround(Model2.transform.position, _rotationVec, 1);
         Debug.Log("hello");
     }
 }
