@@ -26,6 +26,19 @@ public class VisualManager : MonoBehaviour
     [SerializeField]
     private GameObject _distraction;
 
+    private string[] _tutorialInstructions = new string[]
+    {
+        "Welcome! \n To begin, you’ll be given a short tutorial on how to navigate through the VR experience. \n Use your VR controllers to move through the tutorial. \n You will be shown molecule pairs, where you will have to identify whether they are superimposable or non-superimposable.",
+        "Let’s go over how objects can be rotated in 3D space. \n For each example, rotate the astronaut on the right so it matches the one on the left. \n Use the ___ button on your VR controller to interact with the astronaut. \n This astronaut was rotated 180 degrees around the y-axis!",
+        "Well done!",
+        "Rotate the astronaut on the right so it matches the one on the left. \n Use the ___ button on your VR controller to interact with the astronaut. \n This astronaut was rotated 180 degrees around the x-axis!",
+        "Well done!",
+        "Rotate the astronaut on the right so it matches the one on the left. \n Use the ___ button on your VR controller to interact with the astronaut. \n This astronaut was rotated 180 degrees around the z-axis!",
+        "Well done!"
+    };
+
+    private string _activeTutorialInstruction = "";
+
     //if this is enabled, countdown will begin, and when countdown reaches 0, the text will be removed
     private bool _textIsTemporary;
 
@@ -164,12 +177,15 @@ public class VisualManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Method <c>RunIntroduction</c> Does the visuals actions for the introduction.
+    /// Method <c>ShowTutorialInstructions</c> Handles text for tutorial.
     /// </summary>
-    public void RunIntroduction()
+    public void ShowTutorialInstructions()
     {
-        _mainText.text = "This is the introduction activity, please follow the coming instructions";
-        _textIsTemporary = true;
+        _mainText.fontSize = 24;
+        _mainText.text = _activeTutorialInstruction;
+
+
+        /*_textIsTemporary = true;
         _temporaryTextCountdown = _lengthOfTemporaryTextCountdown;
         _moreTextToCome = true;
         _additionalTextPiecesPointer = 0;
@@ -177,7 +193,7 @@ public class VisualManager : MonoBehaviour
         {
             "Tutorial instruction 1",
             "Tutorial instruction 2"
-        };
+        };*/
 
     }
 
@@ -246,6 +262,11 @@ public class VisualManager : MonoBehaviour
         _mainText.fontSize = 36;
         _mainText.transform.localPosition = new Vector3(0, 0, 0);
         ClearTemporaryTextPieces();
+    }
+
+    public void SetTutorialInstructions(int index)
+    {
+        _activeTutorialInstruction = _tutorialInstructions[index];
     }
 
 

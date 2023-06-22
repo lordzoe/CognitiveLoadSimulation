@@ -42,8 +42,13 @@ public class MainObjectManager : MonoBehaviour
 
     public List<FeedbackData> Feedback = new List<FeedbackData>();
 
+    public TestingObject[] TutorialObjects = new TestingObject[10];
+
+
+
+
     [Tooltip("This variable sets the max time allowed for a response to an intrinsic audio cue, after which a click will be flagged as too late")]
-    public float MaxTimeForResponse = 4f; 
+    public float MaxTimeForResponse = 4f;
 
 
     //Number of trials per section
@@ -54,6 +59,7 @@ public class MainObjectManager : MonoBehaviour
 
 
     public bool BetweenTrials = false;
+
 
 
     public enum Phase
@@ -75,11 +81,23 @@ public class MainObjectManager : MonoBehaviour
         Intrinsic
     }
 
+    public enum TutPhase
+    {
+        Interacting,
+        Learning
+    }
+
+    public int TutSubPhaseInd = 0;
+
     public Phase phase;
 
     public Stimulus ActiveStimulus;
 
+    public TutPhase TutorialPhase;
+
     private Phase _previousPhase;
+
+
 
     /*[SerializeField]
     //determines if the assignement of interventions is random (true) or determined by researcher (false)
@@ -112,6 +130,8 @@ public class MainObjectManager : MonoBehaviour
     [SerializeField]
     private IntrinsicAudioPlayer _intrinsicAudioPlayer;
 
+
+
     private int _trialCounter = 0;
 
     private int _trialSubCounter = 0;
@@ -129,6 +149,8 @@ public class MainObjectManager : MonoBehaviour
     //Holds the active testing object 
     private TestingObject _activeTestingObject = null;
 
+    private TestingObject _activeTutorialTestingObject = null;
+
 
     //FILE INFOS
     private string fileNameClicks = "clicks";
@@ -139,7 +161,6 @@ public class MainObjectManager : MonoBehaviour
 
     private string fileNameFeedback = "feedback";
 
-
     private string fileNameCollated = "dataTogether";
 
 
@@ -147,7 +168,7 @@ public class MainObjectManager : MonoBehaviour
     private string dateInfo;
 
 
-    
+
 
 
 
@@ -187,7 +208,7 @@ public class MainObjectManager : MonoBehaviour
 
             }
         }
-        
+
 
         BeginCSVFiles();
         /*using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileName + dateInfo + ".csv"))
@@ -198,7 +219,7 @@ public class MainObjectManager : MonoBehaviour
             data.Flush();
         }*/ //test showing that you can write below easily 
 
-        GroupAOrderedListObjects[6].ProduceObjects(); //DELETE
+        //GroupAOrderedListObjects[6].ProduceObjects(); //DELETE
 
 
     }
@@ -224,7 +245,7 @@ public class MainObjectManager : MonoBehaviour
             }
         }
 
-        GroupAOrderedListObjects[6].testRot(); 
+        // GroupAOrderedListObjects[6].testRot(); //DELETE
     }
 
 
@@ -241,7 +262,7 @@ public class MainObjectManager : MonoBehaviour
             if (ConditionIsExtrisinsic)
             {
                 ActiveStimulus = Stimulus.Extrisnic;
-                
+
             }
             else
             {
@@ -276,7 +297,9 @@ public class MainObjectManager : MonoBehaviour
                     break;
 
                 case Phase.Introduction:
-
+                    _visualManager.SetTutorialInstructions(TutSubPhaseInd);
+                    _visualManager.ShowTutorialInstructions();
+                   // CheckTutorialConditions();
                     break;
 
                 case Phase.PreExperimental:
@@ -331,7 +354,6 @@ public class MainObjectManager : MonoBehaviour
                 break;
 
             case Phase.Introduction:
-                _visualManager.RunIntroduction();
                 break;
 
             case Phase.PreExperimental:
@@ -367,7 +389,7 @@ public class MainObjectManager : MonoBehaviour
         ExperimentRunning = true;
         _visualManager.RunExperimentQuestionText();
         RunTrial();
-        
+
     }
 
 
@@ -378,7 +400,7 @@ public class MainObjectManager : MonoBehaviour
     void RunTrial()
     {
 
-        if(ActiveStimulus==Stimulus.Intrinsic)
+        if (ActiveStimulus == Stimulus.Intrinsic)
         {
             if (!_intrinsicAudioPlayer.AudioOn)
             {
@@ -396,9 +418,44 @@ public class MainObjectManager : MonoBehaviour
             _activeTestingObject.ProduceObjects();
         }
 
-        Answers.Add(new AnswerData(Time.time, ActiveStimulus.ToString(),_activeTestingObject.Model1.name));
+        Answers.Add(new AnswerData(Time.time, ActiveStimulus.ToString(), _activeTestingObject.Model1.name));
         _trialCounter++;
         _trialSubCounter++;
+    }
+
+
+    public void RunTutorialSection()
+    {
+        if (this.transform.childCount == 2)
+        {
+            Destroy(this.transform.GetChild(1).gameObject);
+            Destroy(this.transform.GetChild(0).gameObject);
+        }
+        _activeTutorialTestingObject = null;
+        if (TutorialObjects[TutSubPhaseInd] != null)
+        {
+            _activeTutorialTestingObject = TutorialObjects[TutSubPhaseInd];
+            _activeTutorialTestingObject.ProduceObjects();
+        }
+    }
+
+    public void CheckTutorialConditions()
+    {
+        if (_activeTutorialTestingObject != null)
+        {
+            float angBetween =
+                (Vector3.Dot(_activeTutorialTestingObject.Model1.transform.up, _activeTutorialTestingObject.Model2.transform.up)+
+                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.right, _activeTutorialTestingObject.Model2.transform.right) +
+                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.forward, _activeTutorialTestingObject.Model2.transform.forward))/3f;
+            Debug.Log(angBetween);
+
+            if (_activeTutorialTestingObject.ToBeMatched && angBetween>0.98)
+            {
+                TutSubPhaseInd++;
+                Debug.Log("here we be");
+                RunTutorialSection();
+            }
+        }
     }
 
     /// <summary>

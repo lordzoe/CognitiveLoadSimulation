@@ -7,6 +7,15 @@ public class InputManager : MonoBehaviour
 
     [SerializeField]
     private MainObjectManager _mainObjectManager;
+
+    [SerializeField]
+    private Camera _camera;
+
+    private GameObject _attachedObject;
+
+    private Vector2 _lastMousePos;
+
+    private float _mouseMovementAdjuster = 0.001f;
     // Start is called before the first frame update
     void Start()
     {
@@ -16,6 +25,25 @@ public class InputManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        Vector2 mPos = Input.mousePosition;
+
+        if (_attachedObject != null)
+        {
+            Vector2 diffMPos = mPos - _lastMousePos;
+            //diffMPos *= _mouseMovementAdjuster;
+            Vector3 directionVec = new Vector3(diffMPos.x, diffMPos.y, 0);
+            float mag = -directionVec.magnitude;
+            Vector3 crossVec = Vector3.Cross(Vector3.forward, directionVec);
+            _attachedObject.transform.RotateAround(_attachedObject.transform.position, crossVec, mag);
+           // _attachedObject.transform.position += new Vector3(diffMPos.x,diffMPos.y,0);
+        }
+
+        if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction)
+        {
+            if (!Input.GetMouseButton(0)&&!Input.GetMouseButton(1)){
+                _mainObjectManager.CheckTutorialConditions();
+            }
+        }
 
         if (Input.GetMouseButtonDown(0))
             RunMainClick();
@@ -25,8 +53,13 @@ public class InputManager : MonoBehaviour
         if (Input.GetMouseButtonDown(1))
             RunSecClick();
 
+        if (Input.GetMouseButtonUp(1))
+            _attachedObject = null;
+
         if (Input.GetMouseButtonDown(2))
             Debug.Log("Pressed middle click.");
+
+        _lastMousePos = mPos;
     }
 
     /// <summary>
@@ -51,8 +84,10 @@ public class InputManager : MonoBehaviour
                 break;
 
             case MainObjectManager.Phase.Introduction:
-                Debug.Log("phase was intro");
-                EndIntroduction();
+                //Debug.Log("phase was intro");
+                _mainObjectManager.TutSubPhaseInd++;
+                _mainObjectManager.RunTutorialSection();
+                      //EndIntroduction();
 
                 break;
 
@@ -110,6 +145,29 @@ public class InputManager : MonoBehaviour
             _mainObjectManager.Clicks.Add(new ClickData(Time.time));
             _mainObjectManager.AddClickData();
         }
+
+        if(_mainObjectManager.phase == MainObjectManager.Phase.Introduction) {
+
+            if (_attachedObject == null)
+            {
+                RaycastHit hit;
+                Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+
+                if (Physics.Raycast(ray, out hit))
+                {
+                    Transform objectHit = hit.transform;
+                    if (hit.transform.parent.transform.parent != null)
+                    {
+                        _attachedObject = hit.transform.parent.transform.parent.transform.gameObject;
+                    }
+                }
+            }
+            else
+            {
+                _attachedObject = null;
+            }
+        }
+
     }
 
 

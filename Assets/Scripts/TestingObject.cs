@@ -7,6 +7,9 @@ public class TestingObject : MonoBehaviour
     //Variable communicates if this is a superimposable mirror image or not. This variable is directly used to check if test subjects answers are correct. 
     public bool Superimposable;
 
+    //This is for the tutorial to check if it needs to be matched.
+    public bool ToBeMatched;
+
     //Is the model intending to be mirrored or not
     [SerializeField]
     private bool _mirrored;
@@ -54,17 +57,17 @@ public class TestingObject : MonoBehaviour
             GameObject parent = GameObject.Find("MainObjectManager");
             Model1 = Instantiate(_modelPrefab1, Vector3.zero, Quaternion.identity);
             Model2 = Instantiate(_modelPrefab1, Vector3.zero, Quaternion.identity);
-
-            //Model1.transform.position += Vector3.left * _distance;
+            Model1.transform.parent = parent.transform;
+            Model2.transform.parent = parent.transform;
             // Model2.transform.rotation = Quaternion.Euler(_rotationToApply);
-            //Model2.transform.RotateAround(this.transform.parent.transform.position, _rotationVec, _rotationToApply);
-            //Model2.transform.position += Vector3.right * _distance;
+            Model2.transform.RotateAround(Model2.transform.parent.transform.position, _rotationVec, _rotationToApply);
+            Model1.transform.position += Vector3.left * _distance;
+            Model2.transform.position += Vector3.right * _distance;
             if (_mirrored)
             {
                 Model2.transform.localScale = new Vector3(1, 1, -1f);
             }
-            Model1.transform.parent = parent.transform;
-            Model2.transform.parent = parent.transform;
+            
         }
         else
         {

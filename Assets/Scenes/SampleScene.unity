@@ -620,6 +620,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _mainObjectManager: {fileID: 1741937465}
+  _camera: {fileID: 963194227}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1568,12 +1569,25 @@ MonoBehaviour:
   - {fileID: -2320331867396799771, guid: 9d54bea560fdd4dbbaf851434dba4746, type: 3}
   - {fileID: -2320331867396799771, guid: 87de317b4341148378cebfd3e6cdaffb, type: 3}
   GroupBOrderedListObjects: []
+  TutorialObjects:
+  - {fileID: 0}
+  - {fileID: -1276188103149385006, guid: 135c79d1c901949ac98b0bbad367b0c5, type: 3}
+  - {fileID: -1276188103149385006, guid: 78cd8835737af4d518c2c116bb60e25d, type: 3}
+  - {fileID: -1276188103149385006, guid: eb45f94dc7a7644d580b4f79d9c4ca11, type: 3}
+  - {fileID: -1276188103149385006, guid: 47034ae7f7314446daf6cfd4ff0ba11a, type: 3}
+  - {fileID: -1276188103149385006, guid: 65e0041f444224179b46a78787621be9, type: 3}
+  - {fileID: -1276188103149385006, guid: 323163bad2015478f98d509327da5ed1, type: 3}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   MaxTimeForResponse: 4
   NumberOfTrialsPerSection: 4
   NumberOfTrialsPerSubSection: 2
   BetweenTrials: 0
+  TutSubPhaseInd: 0
   phase: 0
   ActiveStimulus: 0
+  TutorialPhase: 0
   ExperimentRunning: 0
   TimeForFeedback: 0
   ExInputNeeded: 0
