@@ -209,7 +209,7 @@ public class VisualManager : MonoBehaviour
     /// Method <c>RunExperimentIntro</c> Core text for experiment. Yes and no section.
     /// </summary>
     public void RunExperimentIntro() {
-        _mainText.text = "When the molecules appear, please select if you think they are superimpossible or not superimpossible (ie if they are achiral or chiral)";
+        _mainText.text = "When the molecules appear, please select if you think they are superimpossible or not superimpossible";
         ClearTemporaryTextPieces();
     }
 
@@ -218,7 +218,7 @@ public class VisualManager : MonoBehaviour
     /// </summary>
     public void RunExperimentQuestionText()
     {
-        _mainText.text = "Are these molecules non-superimpossible (chiral enatiomers)?";
+        _mainText.text = "Are these molecules superimpossible?";
         _mainText.fontSize = 16;
         _mainText.transform.localPosition = new Vector3(0, -200, 0);
         ToggleYesNoText(true);

@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Superimposable: 1
+  ToBeMatched: 0
   _mirrored: 0
   _modelPrefab1: {fileID: 4972313931150680166, guid: eabb67969bdbf4db99330833f34fdd8a, type: 3}
   _modelPrefab2: {fileID: 0}

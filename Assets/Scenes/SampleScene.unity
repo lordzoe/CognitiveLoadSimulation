@@ -1568,6 +1568,15 @@ MonoBehaviour:
   - {fileID: -2320331867396799771, guid: 7d938777bb0d947ee9d4a94584cbd42c, type: 3}
   - {fileID: -2320331867396799771, guid: 9d54bea560fdd4dbbaf851434dba4746, type: 3}
   - {fileID: -2320331867396799771, guid: 87de317b4341148378cebfd3e6cdaffb, type: 3}
+  - {fileID: 7504953237013896821, guid: 5e0f33eba4b054586a86881a46d80464, type: 3}
+  - {fileID: 7504953237013896821, guid: b3bac96b352d8409b9179a6735bc02cd, type: 3}
+  - {fileID: 7504953237013896821, guid: 169bbb43e89914e2a877d68f37c03fe6, type: 3}
+  - {fileID: 7504953237013896821, guid: 357a57f4b43b844de9881a5ff2149bc1, type: 3}
+  - {fileID: 7504953237013896821, guid: bd3f8c326b0124d5d943afea4c1860ad, type: 3}
+  - {fileID: 7504953237013896821, guid: 455694e0df9ca4fd7a3c3023ee4b055d, type: 3}
+  - {fileID: 7504953237013896821, guid: 80ec3e902df7d45e09217bcf32b58015, type: 3}
+  - {fileID: 7504953237013896821, guid: d096cc79d230e46b7addbb8e05da54a3, type: 3}
+  - {fileID: 7504953237013896821, guid: d88da13a0245943a8803dbec8c28f145, type: 3}
   GroupBOrderedListObjects: []
   TutorialObjects:
   - {fileID: 0}
@@ -1581,8 +1590,8 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   MaxTimeForResponse: 4
-  NumberOfTrialsPerSection: 4
-  NumberOfTrialsPerSubSection: 2
+  NumberOfTrialsPerSection: 16
+  NumberOfTrialsPerSubSection: 4
   BetweenTrials: 0
   TutSubPhaseInd: 0
   phase: 0

@@ -475,7 +475,7 @@ public class MainObjectManager : MonoBehaviour
         }
         bool isCorrect;
 
-        if (didTheyAnswerYes != _activeTestingObject.Superimposable)
+        if (didTheyAnswerYes == _activeTestingObject.Superimposable)
         {
             isCorrect = true;
         }
@@ -693,9 +693,6 @@ public class MainObjectManager : MonoBehaviour
 
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAudio + dateInfo + ".csv"))
         {
-
-            data.WriteLine("Audio");
-            data.WriteLine("Time");
             foreach(AudioTriggerData aTD in AudioTD) {
                 data.WriteLine(aTD.Time);
             }

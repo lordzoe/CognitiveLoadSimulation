@@ -45,11 +45,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Superimposable: 0
+  ToBeMatched: 0
   _mirrored: 1
   _modelPrefab1: {fileID: 8034458585541409701, guid: 0773955e8506142b7846702c4451dca3, type: 3}
   _modelPrefab2: {fileID: 0}
   _rotationToApply: 180
   _rotationVec: {x: 0, y: 1, z: 0}
-  _distance: 0.8
+  _distance: 1
   Model1: {fileID: 0}
   Model2: {fileID: 0}

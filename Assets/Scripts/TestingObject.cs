@@ -67,23 +67,26 @@ public class TestingObject : MonoBehaviour
             {
                 Model2.transform.localScale = new Vector3(1, 1, -1f);
             }
-            
+           
+
         }
         else
         {
             GameObject parent = GameObject.Find("MainObjectManager");
             Model1 = Instantiate(_modelPrefab1, Vector3.zero, Quaternion.identity);
             Model2 = Instantiate(_modelPrefab2, Vector3.zero, Quaternion.identity);
+            Model1.transform.parent = parent.transform;
+            Model2.transform.parent = parent.transform;
+            Model2.transform.RotateAround(Model2.transform.parent.transform.position, _rotationVec, _rotationToApply);
+            Model1.transform.position += Vector3.left * _distance;
+            Model2.transform.position += Vector3.right * _distance;
 
-            //Model1.transform.position += Vector3.left * _distance;
 
-            //Model2.transform.position += Vector3.right * _distance;
             if (_mirrored)
             {
                 Model2.transform.localScale = new Vector3(1, 1, -1f);
             }
-            Model1.transform.parent = parent.transform;
-            Model2.transform.parent = parent.transform;
+            
         }
     }
 

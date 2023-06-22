@@ -1,0 +1,18 @@
+Answers
+Time Question Shown , Time Question Answered , Time Difference, Was Answer Correct?, Stimulus Type, Question Name 
+24.97922,62.96606,37.98684,True,Intrinsic,A1M_C_SI_R180x(Clone)
+63.82411,91.54279,27.71868,True,Intrinsic,A2M_C_SI_R180y(Clone)
+92.4155,103.211,10.79546,True,Intrinsic,A3M_C_SI_R120z(Clone)
+104.0945,112.8328,8.738365,False,Intrinsic,A4M_C_NSI_R180x(Clone)
+117.5853,127.6562,10.0709,False,Intrinsic,A5M_C_NSI_R180y(Clone)
+128.5712,155.2391,26.66789,False,Intrinsic,A6M_C_NSI_R180z(Clone)
+156.2837,168.7547,12.47107,False,Intrinsic,A7M_CI_NSI_R180x(Clone)
+169.6291,186.4885,16.85936,False,Intrinsic,A8M_CI_NSI_R120z(Clone)
+191.8768,200.9628,9.085938,True,Intrinsic,A9M_AC_SI_R180x(Clone)
+201.8536,226.899,25.04536,True,Intrinsic,A10M_AC_SI_R180x(Clone)
+227.8379,242.0793,14.24136,True,Intrinsic,A11M_AC_SI_R180y(Clone)
+243.0305,257.0918,14.06122,True,Intrinsic,A12M_AC_SI_R180y(Clone)
+262.1297,296.9584,34.82874,True,Intrinsic,A13M_AC_SI_R180z(Clone)
+297.8591,308.6969,10.83774,True,Intrinsic,A14M_AC_SI_R180z(Clone)
+309.6889,322.3912,12.70227,False,Intrinsic,A15M_CI_NSI_R180x(Clone)
+323.354,329.0777,5.723663,False,Intrinsic,A16M_CI_NSI_R0(Clone)
