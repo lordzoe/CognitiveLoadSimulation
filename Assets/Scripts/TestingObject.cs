@@ -10,9 +10,14 @@ public class TestingObject : MonoBehaviour
     //This is for the tutorial to check if it needs to be matched.
     public bool ToBeMatched;
 
+    public Vector3 MatchingVectors;
+
     //Is the model intending to be mirrored or not
     [SerializeField]
     private bool _mirrored;
+
+    [SerializeField]
+    private Vector3 _mirroringVector;
 
     //This holds the gameobject primary model used for visualising this model. When visualising this project. 
     [SerializeField]
@@ -65,7 +70,7 @@ public class TestingObject : MonoBehaviour
             Model2.transform.position += Vector3.right * _distance;
             if (_mirrored)
             {
-                Model2.transform.localScale = new Vector3(1, 1, -1f);
+                Model2.transform.localScale = _mirroringVector;
             }
            
 
@@ -84,7 +89,7 @@ public class TestingObject : MonoBehaviour
 
             if (_mirrored)
             {
-                Model2.transform.localScale = new Vector3(1, 1, -1f);
+                Model2.transform.localScale = _mirroringVector;
             }
             
         }

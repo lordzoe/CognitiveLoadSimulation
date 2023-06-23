@@ -86,7 +86,15 @@ public class InputManager : MonoBehaviour
             case MainObjectManager.Phase.Introduction:
                 //Debug.Log("phase was intro");
                 _mainObjectManager.TutSubPhaseInd++;
-                _mainObjectManager.RunTutorialSection();
+                if (_mainObjectManager.TutSubPhaseInd >= _mainObjectManager.TutorialObjects.Length)
+                {
+                    EndIntroduction();
+                }
+                else
+                {
+                    _mainObjectManager.RunTutorialSection();
+                }
+                
                       //EndIntroduction();
 
                 break;

@@ -24,6 +24,18 @@ public class MainObjectManager : MonoBehaviour
 
     public bool GroupAFirst;
 
+    [Tooltip("This variable sets the max time allowed for a response to an intrinsic audio cue, after which a click will be flagged as too late")]
+    public float MaxTimeForResponse = 4f;
+
+
+    //Number of trials per section
+    public int NumberOfTrialsPerSection;
+
+    //Number of trials per sub-section (controls mid group feedbackphase)
+    public int NumberOfTrialsPerSubSection;
+
+    private int _numberOfTutorialSubSections = 26;
+
 
     [Tooltip("Containing list of all models used for group A \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
     public List<TestingObject> GroupAOrderedListObjects;
@@ -42,23 +54,18 @@ public class MainObjectManager : MonoBehaviour
 
     public List<FeedbackData> Feedback = new List<FeedbackData>();
 
-    public TestingObject[] TutorialObjects = new TestingObject[10];
+    public TestingObject[] TutorialObjects = new TestingObject[26];
 
 
 
 
-    [Tooltip("This variable sets the max time allowed for a response to an intrinsic audio cue, after which a click will be flagged as too late")]
-    public float MaxTimeForResponse = 4f;
+    
 
-
-    //Number of trials per section
-    public int NumberOfTrialsPerSection;
-
-    //Number of trials per sub-section (controls mid group feedbackphase)
-    public int NumberOfTrialsPerSubSection;
 
 
     public bool BetweenTrials = false;
+
+    private bool BetweenTutorialSubSections = false;
 
 
 
@@ -143,6 +150,8 @@ public class MainObjectManager : MonoBehaviour
 
     private int _betweenTrialCountdown = 0;
 
+    private int _betweenTutorialSubsectionCountdown = 0;
+
     //checks if the stimulus type JUST changed, and allowing for only single runs of some methods
     private bool _FirstChange = true;
 
@@ -176,6 +185,10 @@ public class MainObjectManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (_numberOfTutorialSubSections != TutorialObjects.Length)
+        {
+            Debug.LogError("STOP, THEREWILL BE AN ISSUE UPCOMING");
+        }
         phase = Phase.Start;
         if (UseRandomAssignment)
         {
@@ -244,6 +257,26 @@ public class MainObjectManager : MonoBehaviour
                 NextTrial();
             }
         }
+        if (BetweenTutorialSubSections)
+        {
+            if (_betweenTutorialSubsectionCountdown > 0)
+            {
+                _betweenTutorialSubsectionCountdown--;
+            }
+            else
+            {
+                BetweenTutorialSubSections = false;
+                TutSubPhaseInd++;
+                if (TutSubPhaseInd >= _numberOfTutorialSubSections)
+                {
+                    phase = Phase.PreExperimental;
+                }
+                else
+                { 
+                RunTutorialSection();
+                }
+            }
+        }
 
         // GroupAOrderedListObjects[6].testRot(); //DELETE
     }
@@ -297,7 +330,7 @@ public class MainObjectManager : MonoBehaviour
                     break;
 
                 case Phase.Introduction:
-                    _visualManager.SetTutorialInstructions(TutSubPhaseInd);
+                    _visualManager.SetTutorialVisuals(TutSubPhaseInd);
                     _visualManager.ShowTutorialInstructions();
                    // CheckTutorialConditions();
                     break;
@@ -444,16 +477,31 @@ public class MainObjectManager : MonoBehaviour
         if (_activeTutorialTestingObject != null)
         {
             float angBetween =
-                (Vector3.Dot(_activeTutorialTestingObject.Model1.transform.up, _activeTutorialTestingObject.Model2.transform.up)+
-                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.right, _activeTutorialTestingObject.Model2.transform.right) +
-                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.forward, _activeTutorialTestingObject.Model2.transform.forward))/3f;
-            Debug.Log(angBetween);
+                
+                (Vector3.Dot(_activeTutorialTestingObject.Model1.transform.up, _activeTutorialTestingObject.Model2.transform.up)* _activeTutorialTestingObject.MatchingVectors.x +
+                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.right, _activeTutorialTestingObject.Model2.transform.right) * _activeTutorialTestingObject.MatchingVectors.y +
+                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.forward, _activeTutorialTestingObject.Model2.transform.forward) * _activeTutorialTestingObject.MatchingVectors.z)
+                / (_activeTutorialTestingObject.MatchingVectors.x+ _activeTutorialTestingObject.MatchingVectors.y + _activeTutorialTestingObject.MatchingVectors.z);
 
-            if (_activeTutorialTestingObject.ToBeMatched && angBetween>0.98)
+           /* Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model1.transform.up, Color.red);
+            Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model2.transform.up, Color.blue);
+
+            Debug.Log(angBetween);*/
+
+            if (_activeTutorialTestingObject.ToBeMatched && angBetween>0.95)
             {
                 TutSubPhaseInd++;
                 Debug.Log("here we be");
-                RunTutorialSection();
+                if (TutSubPhaseInd >= _numberOfTutorialSubSections)
+                {
+                    phase = Phase.PreExperimental;
+                }
+                else
+                {
+                    RunTutorialSection();
+                }
+                BetweenTutorialSubSections = true;
+                _betweenTutorialSubsectionCountdown = 30;
             }
         }
     }

@@ -46,7 +46,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Superimposable: 1
   ToBeMatched: 0
+  MatchingVectors: {x: 0, y: 0, z: 0}
   _mirrored: 0
+  _mirroringVector: {x: -1, y: 1, z: 1}
   _modelPrefab1: {fileID: 2290354555692881534, guid: 6d54869addd684729adc1fb0c39bf82c, type: 3}
   _modelPrefab2: {fileID: 0}
   _rotationToApply: 180
