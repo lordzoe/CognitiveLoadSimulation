@@ -119,7 +119,7 @@ public class IntrinsicAudioPlayer : MonoBehaviour
             audioSource.PlayOneShot(Trigger);
             _numIntSinceLastTrig = 0;
             _lastIntWasTrig = true;
-            _mainObjectManager.AudioTD.Add(new AudioTriggerData(Time.time));
+            _mainObjectManager.AudioTD.Add(new AudioTriggerData(Time.time, _mainObjectManager.phase.ToString()));
         }
         else
         {

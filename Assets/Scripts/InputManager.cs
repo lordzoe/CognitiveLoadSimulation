@@ -16,11 +16,14 @@ public class InputManager : MonoBehaviour
     private Vector2 _lastMousePos;
 
     private float _mouseMovementAdjuster = 0.001f;
+    
     // Start is called before the first frame update
     void Start()
     {
 
     }
+
+    
 
     // Update is called once per frame
     void Update()
@@ -35,12 +38,12 @@ public class InputManager : MonoBehaviour
             float mag = -directionVec.magnitude;
             Vector3 crossVec = Vector3.Cross(Vector3.forward, directionVec);
             _attachedObject.transform.RotateAround(_attachedObject.transform.position, crossVec, mag);
-           // _attachedObject.transform.position += new Vector3(diffMPos.x,diffMPos.y,0);
+            // _attachedObject.transform.position += new Vector3(diffMPos.x,diffMPos.y,0);
         }
 
         if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction)
         {
-            if (!Input.GetMouseButton(0)&&!Input.GetMouseButton(1)){
+            if (!Input.GetMouseButton(0) && !Input.GetMouseButton(1)) {
                 _mainObjectManager.CheckTutorialConditions();
             }
         }
@@ -57,9 +60,21 @@ public class InputManager : MonoBehaviour
             _attachedObject = null;
 
         if (Input.GetMouseButtonDown(2))
+        {
             Debug.Log("Pressed middle click.");
+            if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction)
+            {
+                EndIntroduction();
+            }
+        }
 
         _lastMousePos = mPos;
+    }
+
+
+    public void TakeFeedback(int score)
+    {
+        _mainObjectManager.GetFeedback(score);
     }
 
     /// <summary>
@@ -85,7 +100,12 @@ public class InputManager : MonoBehaviour
 
             case MainObjectManager.Phase.Introduction:
                 //Debug.Log("phase was intro");
-                _mainObjectManager.TutSubPhaseInd++;
+                Debug.Log(_mainObjectManager.TutSubPhaseInd);
+                if(_mainObjectManager.TutSubPhaseInd!=18&& _mainObjectManager.TutSubPhaseInd != 21&& _mainObjectManager.TutSubPhaseInd != 24)
+                {
+                    Debug.Log("here");
+                    _mainObjectManager.TutSubPhaseInd++;
+                }
                 if (_mainObjectManager.TutSubPhaseInd >= _mainObjectManager.TutorialObjects.Length)
                 {
                     EndIntroduction();
@@ -94,13 +114,18 @@ public class InputManager : MonoBehaviour
                 {
                     _mainObjectManager.RunTutorialSection();
                 }
-                
-                      //EndIntroduction();
+
+                //EndIntroduction();
 
                 break;
 
             case MainObjectManager.Phase.PreExperimental:
+
                 EndPreExperimental();
+                break;
+
+            case MainObjectManager.Phase.Rest:
+                EndRestState();
                 break;
 
             case MainObjectManager.Phase.Experimental:
@@ -125,7 +150,7 @@ public class InputManager : MonoBehaviour
                 break;
 
             case MainObjectManager.Phase.Feedback:
-                _mainObjectManager.GetFeedback(mousePos.x);
+               
 
                 break;
 
@@ -150,11 +175,17 @@ public class InputManager : MonoBehaviour
         Debug.Log("Pressed Secondary Button");
         if (_mainObjectManager.phase == MainObjectManager.Phase.Experimental && _mainObjectManager.ActiveStimulus == MainObjectManager.Stimulus.Intrinsic)
         {
-            _mainObjectManager.Clicks.Add(new ClickData(Time.time));
+            _mainObjectManager.Clicks.Add(new ClickData(Time.time, _mainObjectManager.phase.ToString()));
             _mainObjectManager.AddClickData();
         }
 
-        if(_mainObjectManager.phase == MainObjectManager.Phase.Introduction) {
+        if (_mainObjectManager.phase == MainObjectManager.Phase.PreExperimental && !_mainObjectManager.ConditionIsExtrisinsic)
+        {
+            _mainObjectManager.Clicks.Add(new ClickData(Time.time, _mainObjectManager.phase.ToString()));
+            _mainObjectManager.AddClickData();
+        }
+
+        if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction) {
 
             if (_attachedObject == null)
             {
@@ -175,6 +206,26 @@ public class InputManager : MonoBehaviour
                 _attachedObject = null;
             }
         }
+
+        //if (_mainObjectManager.phase == MainObjectManager.Phase.Feedback)
+        //{
+        //    Debug.Log("got here");
+        //    RaycastHit hit;
+        //    Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
+
+        //    if (Physics.Raycast(ray, out hit))
+        //    {
+        //        Debug.Log("and here");
+        //        Transform objectHit = hit.transform;
+        //        PAASObj p = objectHit.gameObject.GetComponent<PAASObj>();
+        //        Debug.Log(objectHit.name);
+        //        Debug.Log(p.name);
+        //        if (p != null)
+        //        {
+        //            Debug.Log(p.Value+" clicked value");
+        //        }
+        //    }
+        //}
 
     }
 
@@ -198,7 +249,9 @@ public class InputManager : MonoBehaviour
     /// Method <c>EndIntroduction</c> End Introduction Phase, and advance Phase to PreExperimental.
     /// </summary>
     void EndIntroduction() {
-        _mainObjectManager.phase = MainObjectManager.Phase.PreExperimental;
+        _mainObjectManager.phase = MainObjectManager.Phase.Rest;
+        _mainObjectManager.DoRestingState(false);
+
     }
 
     /// <summary>
@@ -206,7 +259,25 @@ public class InputManager : MonoBehaviour
     /// </summary>
     void EndPreExperimental()
     {
-        _mainObjectManager.phase = MainObjectManager.Phase.Experimental;
+        _mainObjectManager.phase = MainObjectManager.Phase.Rest;
+        _mainObjectManager.DoRestingState(true);
+    }
+
+    void EndRestState()
+    {
+        _mainObjectManager.phase = MainObjectManager.Phase.Feedback;
+        /*if (_mainObjectManager.OnShortRest) {
+            _mainObjectManager.phase = MainObjectManager.Phase.Experimental;
+            if (_mainObjectManager.ExperimentRunning)
+            {
+                _mainObjectManager.SetBetweenTrials();
+            }
+        }
+        else
+        {
+            _mainObjectManager.phase = MainObjectManager.Phase.PreExperimental;
+            _mainObjectManager.RunPreExperiment();
+        }*/
     }
 
     /// <summary>

@@ -36,6 +36,11 @@ public class MainObjectManager : MonoBehaviour
 
     private int _numberOfTutorialSubSections = 26;
 
+    public int RestLengthSeconds;
+
+    public int BaselineLengthSeconds;
+
+
 
     [Tooltip("Containing list of all models used for group A \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
     public List<TestingObject> GroupAOrderedListObjects;
@@ -59,7 +64,7 @@ public class MainObjectManager : MonoBehaviour
 
 
 
-    
+
 
 
 
@@ -74,6 +79,7 @@ public class MainObjectManager : MonoBehaviour
         PreStart,
         Start,
         Calibration,
+        Rest,
         Introduction, //should this be renamed to tutorial?
         PreExperimental,
         Experimental,
@@ -91,7 +97,8 @@ public class MainObjectManager : MonoBehaviour
     public enum TutPhase
     {
         Interacting,
-        Learning
+        Learning,
+        Feedback
     }
 
     public int TutSubPhaseInd = 0;
@@ -100,9 +107,12 @@ public class MainObjectManager : MonoBehaviour
 
     public Stimulus ActiveStimulus;
 
-    public TutPhase TutorialPhase;
+
+
 
     private Phase _previousPhase;
+
+
 
 
 
@@ -138,6 +148,11 @@ public class MainObjectManager : MonoBehaviour
     private IntrinsicAudioPlayer _intrinsicAudioPlayer;
 
 
+    private float _restTimer = 0;
+
+    public bool OnShortRest = false;
+
+    private float _preExpTimer = 0;
 
     private int _trialCounter = 0;
 
@@ -177,7 +192,11 @@ public class MainObjectManager : MonoBehaviour
     private string dateInfo;
 
 
+    private void OnApplicationQuit()
+    {
+        if (phase != Phase.PostExperiment) { LogCSVData(); }
 
+    }
 
 
 
@@ -269,11 +288,11 @@ public class MainObjectManager : MonoBehaviour
                 TutSubPhaseInd++;
                 if (TutSubPhaseInd >= _numberOfTutorialSubSections)
                 {
-                    phase = Phase.PreExperimental;
+                    phase = Phase.Rest;
                 }
                 else
-                { 
-                RunTutorialSection();
+                {
+                    RunTutorialSection();
                 }
             }
         }
@@ -316,6 +335,7 @@ public class MainObjectManager : MonoBehaviour
         {
             SetNewPhaseText();
             _previousPhase = phase;
+            Debug.Log(phase);
         }
         else
         {
@@ -332,11 +352,73 @@ public class MainObjectManager : MonoBehaviour
                 case Phase.Introduction:
                     _visualManager.SetTutorialVisuals(TutSubPhaseInd);
                     _visualManager.ShowTutorialInstructions();
-                   // CheckTutorialConditions();
+                    switch (TutSubPhaseInd)
+                    {
+                        case 18:
+                            if (Feedback.Count == 0)
+                            {
+                                Feedback.Add(new FeedbackData(Time.time, "Tutorial", "Baseline"));
+                            }
+                            break;
+                        case 21:
+                            if (Feedback.Count == 1)
+                            {
+                                Feedback.Add(new FeedbackData(Time.time, "Tutorial", "Easy"));
+                            }
+                            break;
+                        case 24:
+                            if (Feedback.Count == 2)
+                            {
+                                Feedback.Add(new FeedbackData(Time.time, "Tutorial", "Hard"));
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+                    // CheckTutorialConditions();
                     break;
 
                 case Phase.PreExperimental:
+                    if (Time.time - _preExpTimer < (BaselineLengthSeconds))
+                    {
+                        //Debug.Log(Time.time - _preExpTimer);
+                    }
+                    else
+                    {
+                        phase = Phase.Rest;
+                        DoRestingState(true);
+                    }
+                    break;
 
+                case Phase.Rest:
+                    int modulator = 1;
+                    if (OnShortRest)
+                    {
+                        modulator = 2;
+                    }
+                    if (Time.time - _restTimer < (RestLengthSeconds / modulator))
+                    {
+
+                        //  Debug.Log(  Time.time- _restTimer + " "+ RestLengthSeconds / modulator);
+                    }
+                    else
+                    {
+                        phase = Phase.Feedback;
+                        //if (OnShortRest)
+                        //{
+                        //    phase = Phase.Experimental;
+                        //    if (ExperimentRunning)
+                        //    {
+                        //        SetBetweenTrials();
+                        //    }
+                        //}
+                        //else
+                        //{
+                        //    phase = Phase.PreExperimental;
+                        //    RunPreExperiment();
+                        //}
+                    }
                     break;
 
                 case Phase.Experimental:
@@ -390,7 +472,11 @@ public class MainObjectManager : MonoBehaviour
                 break;
 
             case Phase.PreExperimental:
-                _visualManager.RunPreExperiment();
+                _visualManager.RunPreExperiment(!ConditionIsExtrisinsic);
+                break;
+
+            case Phase.Rest:
+                _visualManager.RunRest(OnShortRest);
                 break;
 
             case Phase.Experimental:
@@ -402,7 +488,7 @@ public class MainObjectManager : MonoBehaviour
 
             case Phase.Feedback:
                 _visualManager.RunFeedback();
-                Feedback.Add(new FeedbackData(Time.time, ActiveStimulus.ToString()));
+                Feedback.Add(new FeedbackData(Time.time, _previousPhase.ToString(), ActiveStimulus.ToString()));//hmm
                 break;
 
             case Phase.PostExperiment:
@@ -412,6 +498,30 @@ public class MainObjectManager : MonoBehaviour
                 Debug.LogError("YOU SHOULD NOT BE HERE CHECK CODE");
                 break;
         }
+    }
+
+
+    public void RunPreExperiment() {
+        Debug.Log("HEREEREE");
+        _preExpTimer = Time.time;
+        if (!ConditionIsExtrisinsic)
+        {
+            if (!_intrinsicAudioPlayer.AudioOn)
+            {
+                _intrinsicAudioPlayer.StartIntrinsicAudio(3f, 5, 2);
+            }
+        }
+        else
+        {
+            _visualManager.RunExtrinsicVisuals();
+        }
+    }
+
+    public void DoRestingState(bool ShortRest)
+    {
+        _intrinsicAudioPlayer.StopIntrinsicAudio();
+        _restTimer = Time.time;
+        OnShortRest = ShortRest;
     }
 
     /// <summary>
@@ -476,32 +586,36 @@ public class MainObjectManager : MonoBehaviour
     {
         if (_activeTutorialTestingObject != null)
         {
-            float angBetween =
-                
-                (Vector3.Dot(_activeTutorialTestingObject.Model1.transform.up, _activeTutorialTestingObject.Model2.transform.up)* _activeTutorialTestingObject.MatchingVectors.x +
-                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.right, _activeTutorialTestingObject.Model2.transform.right) * _activeTutorialTestingObject.MatchingVectors.y +
-                Vector3.Dot(_activeTutorialTestingObject.Model1.transform.forward, _activeTutorialTestingObject.Model2.transform.forward) * _activeTutorialTestingObject.MatchingVectors.z)
-                / (_activeTutorialTestingObject.MatchingVectors.x+ _activeTutorialTestingObject.MatchingVectors.y + _activeTutorialTestingObject.MatchingVectors.z);
-
-           /* Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model1.transform.up, Color.red);
-            Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model2.transform.up, Color.blue);
-
-            Debug.Log(angBetween);*/
-
-            if (_activeTutorialTestingObject.ToBeMatched && angBetween>0.95)
+            if (_activeTutorialTestingObject.ToBeMatched)
             {
-                TutSubPhaseInd++;
-                Debug.Log("here we be");
-                if (TutSubPhaseInd >= _numberOfTutorialSubSections)
+                float angBetween =
+
+                    (Vector3.Dot(_activeTutorialTestingObject.Model1.transform.up, _activeTutorialTestingObject.Model2.transform.up) * _activeTutorialTestingObject.MatchingVectors.x +
+                    Vector3.Dot(_activeTutorialTestingObject.Model1.transform.right, _activeTutorialTestingObject.Model2.transform.right) * _activeTutorialTestingObject.MatchingVectors.y +
+                    Vector3.Dot(_activeTutorialTestingObject.Model1.transform.forward, _activeTutorialTestingObject.Model2.transform.forward) * _activeTutorialTestingObject.MatchingVectors.z)
+                    / (_activeTutorialTestingObject.MatchingVectors.x + _activeTutorialTestingObject.MatchingVectors.y + _activeTutorialTestingObject.MatchingVectors.z);
+
+                /* Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model1.transform.up, Color.red);
+                 Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model2.transform.up, Color.blue);
+
+                 */
+                Debug.Log(angBetween);
+
+                if (angBetween > 0.85)
                 {
-                    phase = Phase.PreExperimental;
+                    TutSubPhaseInd++;
+                    Debug.Log("here we be");
+                    if (TutSubPhaseInd >= _numberOfTutorialSubSections)
+                    {
+                        phase = Phase.Rest;
+                    }
+                    else
+                    {
+                        RunTutorialSection();
+                    }
+                    BetweenTutorialSubSections = true;
+                    _betweenTutorialSubsectionCountdown = 30;
                 }
-                else
-                {
-                    RunTutorialSection();
-                }
-                BetweenTutorialSubSections = true;
-                _betweenTutorialSubsectionCountdown = 30;
             }
         }
     }
@@ -559,10 +673,10 @@ public class MainObjectManager : MonoBehaviour
     /// Method <c>NextTrial</c> Moves the experiment to the next trial
     /// </summary>
     public void NextTrial() {
-       
+
         if (_trialCounter == NumberOfTrialsPerSection)
         {
-            Debug.Log("Time for Feeback "+_trialCounter+"__"+NumberOfTrialsPerSection);
+            Debug.Log("Time for Feeback " + _trialCounter + "__" + NumberOfTrialsPerSection);
             TimeForFeedback = true;
             phase = Phase.Feedback;
             _intrinsicAudioPlayer.StopIntrinsicAudio();
@@ -578,7 +692,7 @@ public class MainObjectManager : MonoBehaviour
             _intrinsicAudioPlayer.StopIntrinsicAudio();
 
         }
-        else 
+        else
         {
             _visualManager.RunExperimentQuestionText();
             Debug.Log("running next trial " + _trialCounter);
@@ -589,44 +703,82 @@ public class MainObjectManager : MonoBehaviour
 
     //
     /// <summary>
-    /// Method <c>GetFeedback</c> NEEDS UPDATE TO ALLOW FOR INBETWEE ADDS Recieves participant answer in form of<paramref name="mouseX"/> and records the rating (TODO)
-    /// <param name="mouseX"> Is the mouseX position, used to calculate the answer </param>
+    /// Method <c>GetFeedback</c> Get feedback.
+    /// <param name="score"> Is the score from feedback </param>
     /// </summary>
-    public void GetFeedback(float mouseX)
+    public void GetFeedback(int score)
     {
-        float score = mouseX / Screen.width * 7.0f;
-        Debug.Log(score);
+
+        Debug.Log(score + " feedback score");
         Feedback[Feedback.Count - 1].Score = score;
         Feedback[Feedback.Count - 1].TimeEnd = Time.time;
         Feedback[Feedback.Count - 1].CalcTimeDiff();
 
         TimeForFeedback = false;
-        if (_onSubFeedback)
+
+        if (phase == Phase.Introduction)
         {
-            SetBetweenTrials();
-            phase = Phase.Experimental;
+            TutSubPhaseInd++;
         }
         else
         {
-
-            _trialCounter = 0;
-            if (_experimentInFirstPhase)
+            if (_onSubFeedback)
             {
-                _experimentInFirstPhase = false;
                 SetBetweenTrials();
                 phase = Phase.Experimental;
-                LogCSVData();
             }
             else
             {
-                phase = Phase.PostExperiment;
+                if (ExperimentRunning)
+                {
+                    _trialCounter = 0;
+                    if (_experimentInFirstPhase)
+                    {
+                        Debug.Log("LOOK HERE " + Feedback[Feedback.Count - 1].NameOfSection);
+                        if (Feedback[Feedback.Count - 1].NameOfSection.Equals("Rest"))
+                        {
+                            _experimentInFirstPhase = false;
+                            phase = Phase.Experimental;
+                            SetBetweenTrials();
+                        }
+                        else
+                        {
+                            phase = Phase.Rest;
+                            DoRestingState(true);
+                        }
+                        //LogCSVData();
+                    }
+                    else
+                    {
+                        phase = Phase.PostExperiment;
+                        LogCSVData();
+                    }
+                }
+                else
+                {
+                    if (OnShortRest)
+                    {
+                        phase = Phase.Experimental;
+                        if (ExperimentRunning)
+                        {
+                            SetBetweenTrials();
+                        }
+                    }
+                    else
+                    {
+                        phase = Phase.PreExperimental;
+                        RunPreExperiment();
+                    }
+
+                }
             }
+            _trialSubCounter = 0;
+            _onSubFeedback = false;
         }
-        _trialSubCounter = 0;
-        _onSubFeedback = false;
-        
 
     }
+
+
 
 
     /// <summary>
@@ -663,7 +815,7 @@ public class MainObjectManager : MonoBehaviour
         {
 
             data.WriteLine("Clicks");
-            data.WriteLine("Time , Nearest AudioCue Time, Time Difference, Was it a Valid Click?, Click Within Max Time? ");
+            data.WriteLine("Time , Nearest AudioCue Time, Time Difference, Was it a Valid Click?, Click Within Max Time?, Section");
             data.Flush();
         }
 
@@ -672,7 +824,7 @@ public class MainObjectManager : MonoBehaviour
         {
 
             data.WriteLine("Audio");
-            data.WriteLine("Time");
+            data.WriteLine("Time, Section");
             data.Flush();
         }
 
@@ -680,7 +832,7 @@ public class MainObjectManager : MonoBehaviour
         {
 
             data.WriteLine("Feedback");
-            data.WriteLine("Number, Score, Time Answer Given, Time Spent on the Screen, Associated Stimulus Type ");
+            data.WriteLine("Number, Score, Time Answer Given, Time Spent on the Screen, Associated Section, Stimulus ");
             data.Flush();
         }
 
@@ -708,10 +860,10 @@ public class MainObjectManager : MonoBehaviour
         Debug.Log("WRITING CSV");
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAnswers + dateInfo + ".csv"))
         {
-            foreach(AnswerData aD in Answers)
+            foreach (AnswerData aD in Answers)
             {
                 String toWrite = aD.TimeQuestionShown + "," + aD.TimeAnswerGiven + "," + aD.TimeDiff + "," + aD.AnswerCorrect + "," + aD.StimulusType + "," + aD.QuestionName;
-                data.WriteLine(toWrite) ;
+                data.WriteLine(toWrite);
             }
             data.Flush();
         }
@@ -721,17 +873,17 @@ public class MainObjectManager : MonoBehaviour
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameClicks + dateInfo + ".csv"))
         {
 
-            foreach(ClickData cD in Clicks)
+            foreach (ClickData cD in Clicks)
             {
                 string toWrite;
-               
+
                 if (cD.CorrectClick)
                 {
-                    toWrite = cD.Time + "," + cD.TimeOfNearestAudio + "," + cD.TimeToNearestAudio+","+"Yes,"+ !cD.TooSlow;
+                    toWrite = cD.Time + "," + cD.TimeOfNearestAudio + "," + cD.TimeToNearestAudio + "," + "Yes," + !cD.TooSlow + "," + cD.Section;
                 }
                 else
                 {
-                     toWrite = cD.Time + ",N/A,N/A,NO,N/A";
+                    toWrite = cD.Time + ",N/A,N/A,NO,N/A,"+cD.Section;
                 }
                 data.WriteLine(toWrite);
             }
@@ -741,8 +893,8 @@ public class MainObjectManager : MonoBehaviour
 
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameAudio + dateInfo + ".csv"))
         {
-            foreach(AudioTriggerData aTD in AudioTD) {
-                data.WriteLine(aTD.Time);
+            foreach (AudioTriggerData aTD in AudioTD) {
+                data.WriteLine(aTD.Time + "," + aTD.Section);
             }
             data.Flush();
         }
@@ -750,27 +902,58 @@ public class MainObjectManager : MonoBehaviour
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameFeedback + dateInfo + ".csv"))
         {
 
-            
+
             int num = 1;
             foreach (FeedbackData fD in Feedback)
             {
-                String toWrite = num + "," + fD.Score + "," + fD.TimeEnd + "," + fD.TimeDifference + "," + fD.NameOfStimulus;
+                String toWrite = num + "," + fD.Score + "," + fD.TimeEnd + "," + fD.TimeDifference + "," + fD.NameOfSection + "," + fD.NameOfStimulus;
                 data.WriteLine(toWrite);
                 num++;
             }
-            
+
             data.Flush();
         }
 
+
+        List<CollatedData> collatedData = GenerateCollatedData();
 
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + fileNameCollated + dateInfo + ".csv"))
         {
 
-            data.WriteLine("TODO");
+            foreach (CollatedData colD in collatedData)
+            {
+                data.WriteLine(colD.Time+","+colD.Type+","+ colD.Info);
+            }
             data.Flush();
         }
     }
 
+
+    public List<CollatedData> GenerateCollatedData()
+    {
+        List<CollatedData> retList = new List<CollatedData>();
+        foreach (AnswerData aD in Answers)
+        {
+            retList.Add(new CollatedData(aD.TimeAnswerGiven, "Answer", (aD.AnswerCorrect ? "Correct" : "Incorrect") + " on Q: " + aD.QuestionName+ " with stimulus: "+aD.StimulusType));
+        }
+
+        foreach (ClickData cD in Clicks)
+        {
+            retList.Add(new CollatedData(cD.Time, "Click", (cD.CorrectClick ? "Valid" : "Invalid") + " & " + (cD.TooSlow ? "Too Slow" : "OnTime")+ " in section "+cD.Section));
+        }
+        foreach (AudioTriggerData aTD in AudioTD)
+        {
+            retList.Add(new CollatedData(aTD.Time, "Audio Trigger", "In section " + aTD.Section));
+        }
+        foreach (FeedbackData fD in Feedback)
+        {
+            retList.Add(new CollatedData(fD.TimeEnd, "Feedback", "Of score: " + fD.Score));
+        }
+
+        retList.Sort((x, y) => x.Time.CompareTo(y.Time));
+        
+        return retList;
+    } 
 
     /// <summary>
     /// Method <c>AddClickData</c> Takes the most recent click and does calculations on it versus the last audiotrigger to assign data

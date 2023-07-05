@@ -14,8 +14,7 @@ public class VisualManager : MonoBehaviour
     [SerializeField]
     private TMP_Text _noText;
 
-    [SerializeField]
-    private TMP_Text _ratingText;
+   
 
     [SerializeField]
     private TMP_Text _stimulusText;
@@ -88,12 +87,11 @@ public class VisualManager : MonoBehaviour
     void Start()
     {
         _mainText.text = "NO TEXT, if this is showing, there is an error";
-        _ratingText.text = "";
         ToggleYesNoText(false);
         _stimulusText.text = "";
         _exText.text = "";
         _distraction.SetActive(false);
-        foreach(GameObject g in _tutorialGraphics)
+        foreach (GameObject g in _tutorialGraphics)
         {
             g.SetActive(false);
         }
@@ -146,28 +144,9 @@ public class VisualManager : MonoBehaviour
         _stimulusText.text = stimulus.ToString();
     }
 
-    /// <summary>
-    /// Method <c>DoStimulus</c> runs stimulus
-    /// </summary>
-    public void DoStimulus(MainObjectManager.Stimulus stimulus, bool exInputNeeded)
+    public void RunExtrinsicVisuals()
     {
-        if (stimulus == MainObjectManager.Stimulus.Extrisnic && exInputNeeded)
-        {
-            _exText.text = "Press right click";
-        }
-        else
-        {
-            _exText.text = "";
-        }
 
-        if (stimulus == MainObjectManager.Stimulus.Intrinsic)
-        {
-            _distraction.SetActive(true);
-        }
-        else
-        {
-            _distraction.SetActive(false);
-        }
     }
 
     /// <summary>
@@ -261,9 +240,37 @@ public class VisualManager : MonoBehaviour
     /// <summary>
     /// Method <c>RunPreExperiment</c> Does the visual action for PreExperiment. Which im imagining as a sort of waiting room lobby area.
     /// </summary>
-    public void RunPreExperiment() {
-        _mainText.text = "The experiment is about to begin";
+    public void RunPreExperiment(bool Intrinsic) {
+        if (Intrinsic)
+        {
+            _mainText.text = "We will be collecting a baseline for 5 minutes, please press the ___ key whenever you hear the letter \"L\"";
+        }
+        else
+        {
+            _mainText.text = "We will be collecting a baseline for 5 minutes, please keep your headset on";
+        }
+        _PAAS.SetActive(false);
         ClearTemporaryTextPieces();
+    }
+
+    public void RunRest(bool ShortRest)
+    {
+        if (ShortRest)
+        {
+            _mainText.text = "You will now be given a 1.5 minute rest where you will have no visuals, please keep your VR headset on";
+        }
+        else
+        {
+            _mainText.text = "You will now be given a 3 minute rest where you will have no visuals, please keep your VR headset on";
+
+        }
+        _textIsTemporary = true;
+        _moreTextToCome = false;
+        _temporaryTextCountdown = 300;
+        _mainText.transform.localPosition = new Vector3(0, -200, 0);
+        _PAAS.SetActive(false);
+        ToggleYesNoText(false);
+
     }
 
     /// <summary>
@@ -271,6 +278,7 @@ public class VisualManager : MonoBehaviour
     /// </summary>
     public void RunExperimentIntro() {
         _mainText.text = "When the molecules appear, please select if you think they are superimpossible or not superimpossible";
+        _PAAS.SetActive(false);
         ClearTemporaryTextPieces();
     }
 
@@ -283,6 +291,8 @@ public class VisualManager : MonoBehaviour
         _mainText.fontSize = 16;
         _mainText.transform.localPosition = new Vector3(0, -200, 0);
         ToggleYesNoText(true);
+        _PAAS.SetActive(false);
+
     }
 
     /// <summary>
@@ -291,10 +301,10 @@ public class VisualManager : MonoBehaviour
     public void RunBetweenTrials()
     {
         ToggleYesNoText(false);
+        _PAAS.SetActive(false);
         _mainText.fontSize = 36;
         _mainText.transform.localPosition = new Vector3(0, 0, 0);
         _mainText.text = "Thank you";
-        _ratingText.text = "";
     }
 
 
@@ -306,8 +316,8 @@ public class VisualManager : MonoBehaviour
         ToggleYesNoText(false);
         _mainText.fontSize = 16;
         _mainText.transform.localPosition = new Vector3(0, 200, 0);
-        _mainText.text = "Please rate factor X from 1 to 7";
-        _ratingText.text = "1	2	3	4	5	6	7";
+        _mainText.text = "Click the emoticon below that best reflects your overall level of mental effort, attention, workload, frustration, motivation, and engagement.";
+        _PAAS.SetActive(true);
         _stimulusText.text = "";
         _distraction.SetActive(false);
 
@@ -319,9 +329,9 @@ public class VisualManager : MonoBehaviour
     public void RunPostExperiment()
     {
         _mainText.text = "Thank you for participating in this experiment please remove your headset/follow instructions from the experimenter";
-        _ratingText.text = "";
         _mainText.fontSize = 36;
         _mainText.transform.localPosition = new Vector3(0, 0, 0);
+        _PAAS.SetActive(false);
         ClearTemporaryTextPieces();
     }
 

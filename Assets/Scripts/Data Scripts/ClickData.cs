@@ -9,9 +9,12 @@ public class ClickData
     public float TimeToNearestAudio;
     public bool CorrectClick;
     public bool TooSlow;
-    public ClickData(float timeC)
+    public string Section;
+
+    public ClickData(float timeC, string sectionC)
     {
         Time = timeC;
+        Section = sectionC;
     }
 
 

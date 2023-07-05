@@ -8,11 +8,13 @@ public class FeedbackData
     public float TimeStart;
     public float TimeEnd;
     public float TimeDifference;
+    public string NameOfSection;
     public string NameOfStimulus;
 
-    public FeedbackData(float timeStartC, string nameOfStimulusC)
+    public FeedbackData(float timeStartC, string nameOfSectionC, string nameOfStimulusC)
     {
         TimeStart = timeStartC;
+        NameOfSection = nameOfSectionC;
         NameOfStimulus = nameOfStimulusC;
     }
 
