@@ -47,10 +47,10 @@ MonoBehaviour:
   Superimposable: 0
   ToBeMatched: 0
   MatchingVectors: {x: 1, y: 1, z: 1}
-  _mirrored: 0
+  _mirrored: 1
   _mirroringVector: {x: -1, y: 1, z: 1}
-  _modelPrefab1: {fileID: 488745974310985754, guid: 4f674de13e8604f0fb128dc21ff4cbd5, type: 3}
-  _modelPrefab2: {fileID: 5856408897170038755, guid: 8c02eadb04f8c44e88e29904e098bfe4, type: 3}
+  _modelPrefab1: {fileID: 7635463513165638317, guid: ff32e70cd482348d6a08742b15c47c90, type: 3}
+  _modelPrefab2: {fileID: 0}
   _rotationToApply: 0
   _rotationVec: {x: 0, y: 1, z: 0}
   _distance: 0.8

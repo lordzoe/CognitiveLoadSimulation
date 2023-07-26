@@ -16,6 +16,8 @@ public class InputManager : MonoBehaviour
     private Vector2 _lastMousePos;
 
     private float _mouseMovementAdjuster = 0.001f;
+
+    private int _timeToWaitBetweenTrials = 90; //not in seconds 
     
     // Start is called before the first frame update
     void Start()
@@ -41,7 +43,7 @@ public class InputManager : MonoBehaviour
             // _attachedObject.transform.position += new Vector3(diffMPos.x,diffMPos.y,0);
         }
 
-        if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction)
+        if (_mainObjectManager.phase == MainObjectManager.Phase.Tutorial)
         {
             if (!Input.GetMouseButton(0) && !Input.GetMouseButton(1)) {
                 _mainObjectManager.CheckTutorialConditions();
@@ -62,9 +64,9 @@ public class InputManager : MonoBehaviour
         if (Input.GetMouseButtonDown(2))
         {
             Debug.Log("Pressed middle click.");
-            if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction)
+            if (_mainObjectManager.phase == MainObjectManager.Phase.Tutorial)
             {
-                EndIntroduction();
+                EndTutorial();
             }
         }
 
@@ -98,24 +100,22 @@ public class InputManager : MonoBehaviour
                 EndCalibration();
                 break;
 
-            case MainObjectManager.Phase.Introduction:
-                //Debug.Log("phase was intro");
+            case MainObjectManager.Phase.Tutorial:
                 Debug.Log(_mainObjectManager.TutSubPhaseInd);
-                if(_mainObjectManager.TutSubPhaseInd!=18&& _mainObjectManager.TutSubPhaseInd != 21&& _mainObjectManager.TutSubPhaseInd != 24)
+                if(_mainObjectManager.TutSubPhaseInd!=19&& _mainObjectManager.TutSubPhaseInd != 22&& _mainObjectManager.TutSubPhaseInd != 25)
                 {
                     Debug.Log("here");
-                    _mainObjectManager.TutSubPhaseInd++;
+                    _mainObjectManager.NextSubTutPhase();
                 }
                 if (_mainObjectManager.TutSubPhaseInd >= _mainObjectManager.TutorialObjects.Length)
                 {
-                    EndIntroduction();
+                    EndTutorial();
                 }
                 else
                 {
                     _mainObjectManager.RunTutorialSection();
                 }
 
-                //EndIntroduction();
 
                 break;
 
@@ -185,7 +185,7 @@ public class InputManager : MonoBehaviour
             _mainObjectManager.AddClickData();
         }
 
-        if (_mainObjectManager.phase == MainObjectManager.Phase.Introduction) {
+        if (_mainObjectManager.phase == MainObjectManager.Phase.Tutorial) {
 
             if (_attachedObject == null)
             {
@@ -195,9 +195,11 @@ public class InputManager : MonoBehaviour
                 if (Physics.Raycast(ray, out hit))
                 {
                     Transform objectHit = hit.transform;
+                    Debug.Log(objectHit.name+" hit"); 
                     if (hit.transform.parent.transform.parent != null)
                     {
                         _attachedObject = hit.transform.parent.transform.parent.transform.gameObject;
+                        Debug.Log(_attachedObject.name+" selected");
                     }
                 }
             }
@@ -239,16 +241,16 @@ public class InputManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Method <c>EndCalibration</c> End Calibration Phase, and advance Phase to introduction.
+    /// Method <c>EndCalibration</c> End Calibration Phase, and advance Phase to tutorial.
     /// </summary>
     void EndCalibration() {
-        _mainObjectManager.phase = MainObjectManager.Phase.Introduction;
+        _mainObjectManager.phase = MainObjectManager.Phase.Tutorial;
     }
 
     /// <summary>
-    /// Method <c>EndIntroduction</c> End Introduction Phase, and advance Phase to PreExperimental.
+    /// Method <c>EndTutorial</c> End Tutorial Phase, and advance Phase to PreExperimental.
     /// </summary>
-    void EndIntroduction() {
+    void EndTutorial() {
         _mainObjectManager.phase = MainObjectManager.Phase.Rest;
         _mainObjectManager.DoRestingState(false);
 
@@ -315,19 +317,17 @@ public class InputManager : MonoBehaviour
     /// </summary>
     void AnswerExperiment(float mouseX)
     {
-        int leftOrRight=0;//left is 1, right is 0
+        bool answerYes;
         
             if (mouseX < Screen.width / 2f)
             {
-                leftOrRight = 1;
+                answerYes = true;
             }
             else
             {
-                leftOrRight = 0;
+                answerYes = false;
             }
-            Debug.Log("left(1) or right(0)?  "+leftOrRight);
-            _mainObjectManager.AnswerQuestion(leftOrRight);
-            _mainObjectManager.SetBetweenTrials();
+            _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials,answerYes);
     }
 
 

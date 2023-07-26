@@ -48,11 +48,11 @@ MonoBehaviour:
   ToBeMatched: 0
   MatchingVectors: {x: 1, y: 1, z: 1}
   _mirrored: 1
-  _mirroringVector: {x: -1, y: 1, z: 1}
+  _mirroringVector: {x: 1, y: -1, z: 1}
   _modelPrefab1: {fileID: 7635463513165638317, guid: ff32e70cd482348d6a08742b15c47c90, type: 3}
   _modelPrefab2: {fileID: 0}
-  _rotationToApply: 0
-  _rotationVec: {x: 0, y: 1, z: 0}
+  _rotationToApply: 120
+  _rotationVec: {x: 1, y: 1, z: 1}
   _distance: 0.8
   Model1: {fileID: 0}
   Model2: {fileID: 0}

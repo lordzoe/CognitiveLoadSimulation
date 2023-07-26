@@ -6,6 +6,7 @@ public class AudioTriggerData
 {
     public float Time;
     public string Section;
+    public bool CueWasClickedFor = false;
     public AudioTriggerData(float timeC, string sectionC)
     {
         Time = timeC;

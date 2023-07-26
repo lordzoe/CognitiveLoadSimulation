@@ -22,6 +22,7 @@ public class PAASObj : MonoBehaviour
 
     public void ClickedOn()
     {
+        Debug.Log("clicked!");
         _inputManager.TakeFeedback(Value);
     }
 }

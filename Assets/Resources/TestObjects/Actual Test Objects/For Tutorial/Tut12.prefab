@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 48672164503508225}
   - component: {fileID: -1276188103149385006}
   m_Layer: 0
-  m_Name: Tut13
+  m_Name: Tut12
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -48,11 +48,11 @@ MonoBehaviour:
   ToBeMatched: 0
   MatchingVectors: {x: 1, y: 1, z: 1}
   _mirrored: 1
-  _mirroringVector: {x: 1, y: -1, z: 1}
-  _modelPrefab1: {fileID: 7635463513165638317, guid: ff32e70cd482348d6a08742b15c47c90, type: 3}
+  _mirroringVector: {x: -1, y: 1, z: 1}
+  _modelPrefab1: {fileID: 5759419403126268677, guid: 847dda925f7fc4c5694ca88874dded95, type: 3}
   _modelPrefab2: {fileID: 0}
-  _rotationToApply: 120
-  _rotationVec: {x: 1, y: 1, z: 1}
+  _rotationToApply: 0
+  _rotationVec: {x: 0, y: 0, z: 1}
   _distance: 0.8
   Model1: {fileID: 0}
   Model2: {fileID: 0}
