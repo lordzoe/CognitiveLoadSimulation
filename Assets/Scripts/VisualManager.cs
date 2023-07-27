@@ -181,7 +181,7 @@ public class VisualManager : MonoBehaviour
     /// <summary>
     /// Method <c>RunIntro</c> Does the visuals actions for the start.
     /// </summary>
-    public void RunStart() //NTC these all run only starting visuals, maybe rename?
+    public void RunStart() 
     {
         _mainText.text = "Welcome to the experiment, it will begin shortly";
         _mainText.fontSize = 36;

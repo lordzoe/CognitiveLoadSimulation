@@ -71,6 +71,10 @@ public class MainObjectManager : MonoBehaviour
 
     public List<FeedbackData> Feedback = new List<FeedbackData>();
 
+
+    /// <summary>
+    /// These hold the Tutorial Objects, DO NOT EDIT PLEASE
+    /// </summary>
     public TestingObject[] TutorialObjects = new TestingObject[26];
 
     /// <summary>
@@ -299,6 +303,9 @@ public class MainObjectManager : MonoBehaviour
             Debug.Log(ActivePhase); //Can delete this, just for clarity purpose
             if (ActivePhase == Phase.Feedback)
                 Feedback.Add(new FeedbackData(Time.time, _previousPhase.ToString(), ActiveStimulus.ToString())); //if starting feedback phase, produce place for the data to be stored
+            if (ActivePhase == Phase.Experimental)
+                DetermineStimulusPhase();
+
             _previousPhase = ActivePhase; //set what the previous phase to be current phase
         }
         else
@@ -314,8 +321,8 @@ public class MainObjectManager : MonoBehaviour
                     break;
 
                 case Phase.Tutorial:
-                    _visualManager.SetTutorialVisuals(TutSubPhaseInd); //Do tutorial visuals
-                    _visualManager.ShowTutorialInstructions(); //and the text visuals
+                    _visualManager.SetTutorialVisuals(TutSubPhaseInd); //Do tutorial visuals based on the slide
+                    _visualManager.ShowTutorialInstructions(); //and the text visuals based on the slide
                     switch (TutSubPhaseInd) //which "slide" of the tutorial is being viewed
                     {
                         case 19:
@@ -332,7 +339,6 @@ public class MainObjectManager : MonoBehaviour
                             {
                                 _onExampleTutorialQuestion = true;
                                 _exQuestionWaitLength = ExQuestionsLengthSeconds[0];
-                                Debug.Log("IM HERE");
                                 _exQTimer = Time.time;
                             }
                             break;
@@ -424,7 +430,6 @@ public class MainObjectManager : MonoBehaviour
                     break;
 
                 case Phase.Experimental:
-                    DetermineStimulusPhase();
                     break;
 
                 case Phase.Feedback:
@@ -528,6 +533,18 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
+
+    /// <summary>
+    /// Method <c>DoRestingState</c> Handles the resting state, mainly important to just stop visuals and such
+    /// </summary>
+    public void DoRestingState(bool ShortRest)
+    {
+        _intrinsicAudioPlayer.StopIntrinsicAudio();
+        _visualManager.ShowExtrinsicStimulus(false);
+        _restTimer = Time.time;
+        _onShortRest = ShortRest;
+    }
+
     /// <summary>
     /// Method <c>RunPreExperiment</c> Handles the baseline aquisition.
     /// </summary>
@@ -546,16 +563,7 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Method <c>DoRestingState</c> Handles the resting state, mainly important to just stop visuals and such
-    /// </summary>
-    public void DoRestingState(bool ShortRest)
-    {
-        _intrinsicAudioPlayer.StopIntrinsicAudio();
-        _visualManager.ShowExtrinsicStimulus(false);
-        _restTimer = Time.time;
-        _onShortRest = ShortRest;
-    }
+    
 
     /// <summary>
     /// Method <c>BeginExperiment</c> Starts the experiment
@@ -565,7 +573,6 @@ public class MainObjectManager : MonoBehaviour
         ExperimentRunning = true;
         _visualManager.RunExperimentQuestionText(ActiveStimulus == Stimulus.Intrinsic);
         RunTrial();
-
     }
 
 
@@ -574,7 +581,6 @@ public class MainObjectManager : MonoBehaviour
     /// </summary>
     void RunTrial()
     {
-        Debug.Log("running trial section");
         if (ActiveStimulus == Stimulus.Intrinsic)
         {
             if (!_intrinsicAudioPlayer.AudioOn)
@@ -597,13 +603,12 @@ public class MainObjectManager : MonoBehaviour
         if ((_experimentInFirstSection && GroupAFirst) || (!_experimentInFirstSection && !GroupAFirst)) // the two situations where it should be showing group A
         {
             _activeTestingObject = GroupAOrderedListObjects[_trialCounter];
-            _activeTestingObject.ProduceModels();
         }
         else //otherwise it must be group B
         {
             _activeTestingObject = GroupBOrderedListObjects[_trialCounter];
-            _activeTestingObject.ProduceModels();
         }
+        _activeTestingObject.ProduceModels();
 
         Answers.Add(new AnswerData(Time.time, ActiveStimulus.ToString(), _activeTestingObject.Model1.name)); //add new data file for answers, logging current time and name of testing object
 
@@ -626,7 +631,6 @@ public class MainObjectManager : MonoBehaviour
     /// </summary>
     public void RunTutorialSection()
     {
-        Debug.Log("running tut section");
         if (this.transform.childCount == 2) //if there are already objects active, destroy them
         {
             Destroy(this.transform.GetChild(1).gameObject);
@@ -660,15 +664,8 @@ public class MainObjectManager : MonoBehaviour
                 if (angBetween > 0.85) //if they are matching 
                 {
                     NextSubTutPhase(); //advance the phase
-                    if (TutSubPhaseInd >= _numberOfTutorialSubSections)
-                    {
-                        ActivePhase = Phase.Rest;
-                        Debug.Log("DO WE EVER GET HERE?");
-                    }
-                    else
-                    {
-                        RunTutorialSection(); //and run it
-                    }
+                    RunTutorialSection(); //and run it
+
                     _betweenTutorialSubSections = true;
                     _betweenTutorialSubsectionCountdown = 30;
                 }
