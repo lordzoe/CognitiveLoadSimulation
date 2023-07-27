@@ -10877,7 +10877,7 @@ MonoBehaviour:
   NumberOfTrialsPerSection: 4
   NumberOfTrialsPerSubSection: 2
   RestLengthSeconds: 30
-  BaselineLengthSeconds: 60
+  BaselineLengthSeconds: 20
   ExQuestionsLengthSeconds: 070000000c000000
   GroupAOrderedListObjects:
   - {fileID: -2320331867396799771, guid: f8bd4c4c8f8324c4ba946fe9b8570d21, type: 3}
@@ -10942,13 +10942,12 @@ MonoBehaviour:
   - {fileID: 0}
   BetweenTrials: 0
   TutSubPhaseInd: 0
-  phase: 0
+  ActivePhase: 0
   ActiveStimulus: 0
   ExperimentRunning: 0
   TimeForFeedback: 0
   _visualManager: {fileID: 934400285}
   _intrinsicAudioPlayer: {fileID: 1932229233}
-  OnShortRest: 0
 --- !u!1 &1769376763
 GameObject:
   m_ObjectHideFlags: 0

@@ -296,10 +296,10 @@ public class MainObjectManager : MonoBehaviour
         if (ActivePhase != _previousPhase) //if the phase has just changed
         {
             SetNewPhaseText(); //set text visuals
-            _previousPhase = ActivePhase; //set what the previous phase to be current phase
             Debug.Log(ActivePhase); //Can delete this, just for clarity purpose
             if (ActivePhase == Phase.Feedback)
                 Feedback.Add(new FeedbackData(Time.time, _previousPhase.ToString(), ActiveStimulus.ToString())); //if starting feedback phase, produce place for the data to be stored
+            _previousPhase = ActivePhase; //set what the previous phase to be current phase
         }
         else
         {
@@ -811,7 +811,7 @@ public class MainObjectManager : MonoBehaviour
                     _trialCounter = 0; //reset the trial counter
                     if (_experimentInFirstSection) //if we were in the first section previously
                     {
-                        Debug.Log("LOOK HERE " + Feedback[Feedback.Count - 1].NameOfSection);
+                        //Debug.Log("LOOK HERE " + Feedback[Feedback.Count - 1].NameOfSection);
                         if (Feedback[Feedback.Count - 1].NameOfSection.Equals("Rest")) //if the feedback just came from the end of a rest section
                         {
                             _experimentInFirstSection = false; //then we are not in the first section anymore, and should start second section
@@ -832,14 +832,10 @@ public class MainObjectManager : MonoBehaviour
                 }
                 else //if the experiment hasnt started yet (ie we havent ever entered the experimental phase yet)
                 {
-                    if (_onShortRest) //if we just finished a short rest (THIS ENTIRE SECTION MIGHT BE UNREACHED CODE
+                    if (_onShortRest) //if we just finished a short rest 
                     {
-                        Debug.Log("DO WE EVER GET HERE??");
-                        ActivePhase = Phase.Experimental; //move to experiment
-                        if (ExperimentRunning) //this is an error, need to bug check
-                        {
-                            SetBetweenTrials(0);
-                        }
+                        ActivePhase = Phase.Experimental; //move to experimental section
+                        
                     }
                     else //if we on a long rest
                     {

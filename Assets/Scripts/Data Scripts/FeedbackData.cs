@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Class <c>FeedbackData</c> This class stores feedback data
+/// </summary>
 public class FeedbackData
 {
     public float Score;
