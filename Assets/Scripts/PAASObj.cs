@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Class <c>PAASObj</c> This class is assigned to each of the PAAS emojis, and allows for the passing of values along, this will undergo some changes for VR
+/// </summary>
 public class PAASObj : MonoBehaviour
 {
     public int Value = 0;
@@ -22,7 +25,6 @@ public class PAASObj : MonoBehaviour
 
     public void ClickedOn()
     {
-        Debug.Log("clicked!");
         _inputManager.TakeFeedback(Value);
     }
 }

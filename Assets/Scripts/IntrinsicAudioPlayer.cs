@@ -96,7 +96,7 @@ public class IntrinsicAudioPlayer : MonoBehaviour
             _lastAudioCueWasTrig = true;
 
             //save the data of when the audio cue was played to the list of audio cue data in _mainObjectManager
-            _mainObjectManager.AudioTD.Add(new AudioTriggerData(Time.time, _mainObjectManager.phase.ToString()));
+            _mainObjectManager.AudioTD.Add(new AudioTriggerData(Time.time, _mainObjectManager.ActivePhase.ToString()));
         }
         else //if not time for the trigger audio
         {

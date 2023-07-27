@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Class <c>MoveMeAround</c> This class was a stand in to make extrinsic visuals look fun!
+/// </summary>
 public class MoveMeAround : MonoBehaviour
 {
     float speed = 20;

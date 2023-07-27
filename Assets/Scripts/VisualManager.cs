@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+/// <summary>
+/// Class <c>VisualManager</c> This class recieves inputs from MainObjectManager in order to produce all the visuals on the screen
+/// </summary>
 public class VisualManager : MonoBehaviour
 {
     //holds the main text object (for now)
@@ -50,15 +53,6 @@ public class VisualManager : MonoBehaviour
 
     //how long to set _temporaryTextCountdown to
     private int _lengthOfTemporaryTextCountdown = 900;
-
-    //if this bool is enabled, there will be more text drawn from _additionalTextPieces once the _temporaryTextCountdown counter reaches 0, this text will also be temporary and obey the _lengthOfTemporaryTextCountdown length
-    private bool _moreTextToCome;
-
-    //holds additional pieces of text to be added in sequence, after the time designated in _lengthOfTemporaryTextCountdown
-    private List<string> _additionalTextPieces;
-
-    //points to indexes for _additionalTextPieces
-    private int _additionalTextPiecesPointer = 0;
 
     //the amount of space between the camera and the UI 
     private float _camSpacing = 1200f;
@@ -168,22 +162,8 @@ public class VisualManager : MonoBehaviour
         }
         else
         {
-            if (_moreTextToCome) {
-                _temporaryTextCountdown = _lengthOfTemporaryTextCountdown;
-                _mainText.text = _additionalTextPieces[_additionalTextPiecesPointer];
-                _additionalTextPiecesPointer++;
-                if (_additionalTextPiecesPointer >= _additionalTextPieces.Count)
-                {
-                    _moreTextToCome = false;
-                    _additionalTextPieces = new List<string>();
-                    _additionalTextPiecesPointer = 0;
-                }
-            }
-            else
-            {
-                _mainText.text = "";
-                _textIsTemporary = false;
-            }
+            _mainText.text = "";
+            _textIsTemporary = false;
         }
     }
 
@@ -195,9 +175,6 @@ public class VisualManager : MonoBehaviour
     {
         _temporaryTextCountdown = 0;
         _textIsTemporary = false;
-        _moreTextToCome = false;
-        _additionalTextPieces = new List<string>();
-        _additionalTextPiecesPointer = 0;
         LayoutRebuilder.ForceRebuildLayoutImmediate(_mainBackground.GetComponent<RectTransform>());
     }
 
@@ -255,7 +232,6 @@ public class VisualManager : MonoBehaviour
         {
             _mainText.text = "We will be collecting a baseline for 5 minutes, please keep your headset on";
             _textIsTemporary = true;
-            _moreTextToCome = false;
             _temporaryTextCountdown = 300;
         }
         _PAAS.SetActive(false);
@@ -276,7 +252,6 @@ public class VisualManager : MonoBehaviour
         }
         _mainText.fontSize = 36;
         _textIsTemporary = true;
-        _moreTextToCome = false;
         _temporaryTextCountdown = 300;
         _mainBackground.transform.localPosition = new Vector3(0, 0, 0);
         _PAAS.SetActive(false);

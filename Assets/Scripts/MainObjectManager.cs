@@ -5,14 +5,15 @@ using System.Text ;
 using System.IO ;
 using System ;
 
+
+/// <summary>
+/// Class <c>MainObjectManager</c> This class is the core behaviour controller of the software. It recieves inputs from the input manager and sends outputs to visual manager, and instrinsic audio player
+/// </summary>
 public class MainObjectManager : MonoBehaviour
 {
-    //when this bool is enabled by the user,
-    //the code will randomly assign order of control/experimental conditions,
-    //as well as type of experimental conditions
+
     [Tooltip("When this bool is enabled by the user, the code will randomly assign order of control/experimental conditions, as well as type of experimental conditions.")]
     public bool UseRandomAssignment = false;
-
 
     [Tooltip("This controls if the first set of tests is a control or experimental group. To be controlled by researcher, or randomized.")]
     public bool ControlFirst;
@@ -26,22 +27,31 @@ public class MainObjectManager : MonoBehaviour
     [Tooltip("This variable sets the max time allowed for a response to an intrinsic audio cue, after which a click will be flagged as too late")]
     public float MaxTimeForResponse = 4f;
 
-
-    //Number of trials per section
+    [Tooltip("This variable sets number of trials per section, being A group or B group, normally should be 16")]
     public int NumberOfTrialsPerSection;
 
-    //Number of trials per sub-section (controls mid group feedbackphase)
+    [Tooltip("Number of trials to complete before a PAAS scale is shown. Best if this is a multiple of the above variable (NumberOfTrialPerSection)")]
     public int NumberOfTrialsPerSubSection;
 
-    private int _numberOfTutorialSubSections = 26; //holds number of tutorial sections
+    /// <summary>
+    /// holds number of tutorial sections
+    /// </summary>
+    private int _numberOfTutorialSubSections = 26;
 
+
+
+
+
+    [Tooltip("Length in seconds of the full length rest")]
     public int RestLengthSeconds; //how long rests should be
 
+    [Tooltip("Length in seconds of the baseline collection")]
     public int BaselineLengthSeconds; //how long the baseline collection should be
 
+    [Tooltip("Length in seconds of the easy and hard practice problems for PAAS scale teaching in the tutorial")]
     public int[] ExQuestionsLengthSeconds; //holds two values for the tutorial example question lengths
 
-    private int _exQuestionWaitLength; //holds the correct question waiting time based on which portion of tutorial we in
+
 
     //holds the objects for the questions
 
@@ -49,11 +59,10 @@ public class MainObjectManager : MonoBehaviour
     public List<TestingObject> GroupAOrderedListObjects;
 
     [Tooltip("Containing list of all models used for group B \nLIST MUST BE IN CORRECT ORDER \nDo not modify this list unless you know what you are doing!!")]
-
     public List<TestingObject> GroupBOrderedListObjects;
 
 
-    //data structures 
+    //data structures, do not edit
     public List<AnswerData> Answers = new List<AnswerData>();
 
     public List<ClickData> Clicks = new List<ClickData>();
@@ -64,30 +73,40 @@ public class MainObjectManager : MonoBehaviour
 
     public TestingObject[] TutorialObjects = new TestingObject[26];
 
-
-    //is the experiment between two questions 
+    /// <summary>
+    /// is the experiment between two questions 
+    /// </summary>
     public bool BetweenTrials = false;
 
-    //are we between tutorial subsections 
+    /// <summary>
+    ///are we between tutorial subsections 
+    /// </summary>
     private bool _betweenTutorialSubSections = false;
 
-    //are we on an example question in the tutorial
-    private bool _onExampleTutorialQuestion = false; 
+    /// <summary>
+    /// are we on an example question in the tutorial
+    /// </summary>
+    private bool _onExampleTutorialQuestion = false;
 
 
+    /// <summary>
+    /// this is an enum that corresponds to the phase that the overall experiment is in
+    /// </summary>
     public enum Phase
     {
-        PreStart,
-        Start,
-        Calibration,
-        Rest,
-        Tutorial, //should this be renamed to tutorial?
-        PreExperimental,
-        Experimental,
-        Feedback,
-        PostExperiment
+        PreStart,//space before experiment begins
+        Start, //beginning of experiment
+        Calibration, //calibration of the headset
+        Rest, //rest phase, done in between many sections
+        Tutorial, //Tutorial to teach user about the experiment
+        PreExperimental, //Baseline aquisition
+        Experimental, //Main experiment
+        Feedback, //PAAS scale feedback time
+        PostExperiment //After the experiment waiting area
     }
-
+    /// <summary>
+    /// enum maps types of stimulus  during experimental phase
+    /// </summary>
     public enum Stimulus
     {
         Control,
@@ -95,60 +114,110 @@ public class MainObjectManager : MonoBehaviour
         Intrinsic
     }
 
-    public enum TutPhase
-    {
-        Interacting,
-        Learning,
-        Feedback
-    }
-
+    /// <summary>
+    ///holds which portion (slide) of the tutorial is currently being used 
+    /// </summary>
     public int TutSubPhaseInd = 0;
 
-    public Phase phase;
+    /// <summary>
+    ///holds currently active phase 
+    /// </summary>
+    public Phase ActivePhase;
 
+    /// <summary>
+    ///holds currently active stimulus 
+    /// </summary>
     public Stimulus ActiveStimulus;
 
+    /// <summary>
+    ///holds the previous phase 
+    /// </summary>
     private Phase _previousPhase;
 
-    //Is the experiment running? (better catch it!!) NOTE: This will remain true even during feedback periods of the experiment
+    /// <summary>
+    ///Is the experiment running? (better catch it!!) NOTE: This will remain true even during feedback periods of the experiment
+    /// </summary>
     public bool ExperimentRunning = false;
 
-    //When this bool is primed, the next click in input will switch phase to the feedback phase.
+
+    /// <summary>
+    /// When this bool is primed, the next click in input will switch phase to the feedback phase.
+    /// </summary>
     public bool TimeForFeedback = false;
 
-    [SerializeField]
-    private VisualManager _visualManager;
 
     [SerializeField]
-    private IntrinsicAudioPlayer _intrinsicAudioPlayer;
+    private VisualManager _visualManager; //holds visual manager
 
+    [SerializeField]
+    private IntrinsicAudioPlayer _intrinsicAudioPlayer; //holds instrinsic audioplayer
+
+    /// <summary>
+    ///timer for rest 
+    /// </summary>
     private float _restTimer = 0;
 
-    public bool OnShortRest = false;
+    /// <summary>
+    ///whether the current rest is a long rest or a short rest (1/2 the length of a long rest) 
+    /// </summary>
+    private bool _onShortRest = false;
 
+    /// <summary>
+    ///tutorial example question timer 
+    /// </summary>
     private float _exQTimer = 0;
 
+    /// <summary>
+    ///timer for baseline collection 
+    /// </summary>
     private float _preExpTimer = 0;
 
-    private int _trialCounter = 0;
+    /// <summary>
+    /// currently active trial number (goes from 0 until <paramref name="NumberOfTrialsPerSection"/>)
+    /// </summary>
+    private int _trialCounter = 0; //
 
+    /// <summary>
+    /// currently active trial number until next feedback (goes from 0 until <paramref name="NumberOfTrialsPerSubSection"/>)
+    /// </summary>
     private int _trialSubCounter = 0;
 
+    /// <summary>
+    /// is the current feedback phase initated as a subsection feedback, or the end of a section feedback (for example if it was on group A of molecules will next it move to group B or back to group A)
+    /// </summary>
     private bool _onSubFeedback = false;
 
-    //Holds if the expriement is in the first phase or the second phase (regardless of if that is A or B)
-    private bool _experimentInFirstPhase = true;
+    /// <summary>
+    /// Current length to wait for the example question during the tuturiall (this is the "what is x?" and the "mcdonalds" question)
+    /// </summary>
+    private int _exQuestionWaitLength;
 
+    /// <summary>
+    ///Holds if the expriement is in the first phase or the second phase (regardless of if that is A or B) 
+    /// </summary>
+    private bool _experimentInFirstSection = true;
+
+    /// <summary>
+    /// Timer for the pause between trials
+    /// </summary>
     private int _betweenTrialCountdown = 0;
 
+    /// <summary>
+    /// Timer for being between tutorial subsections 
+    /// </summary>
     private int _betweenTutorialSubsectionCountdown = 0;
 
-    //Holds the active testing object 
+    /// <summary>
+    /// Holds the active experiment object, which holds both of the molecules within it that subject is being tested on
+    /// </summary>
     private TestingObject _activeTestingObject = null;
 
+    /// <summary>
+    /// Holds the active tutorial object for user interaction during the tutorial!
+    /// </summary>
     private TestingObject _activeTutorialTestingObject = null;
 
-    //FILE INFOS
+    //These variables all are the names used for the CSV files that corr
     private string _fileNameClicks = "clicks";
 
     private string _fileNameAnswers = "answers";
@@ -161,21 +230,24 @@ public class MainObjectManager : MonoBehaviour
 
     private string _dateInfo; //holds the date to make sure files are uniquely named
 
-    //if the program closes before ending, log data
+
+    /// <summary>
+    /// Method <c>OnApplicationQuit</c> Ensures the program closes before reaching the end of the full experiment, it will still log data
+    /// </summary>
     private void OnApplicationQuit()
     {
-        if (phase != Phase.PostExperiment) LogCSVData(); 
+        if (ActivePhase != Phase.PostExperiment) LogCSVData();
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        if (_numberOfTutorialSubSections != TutorialObjects.Length)
+        if (_numberOfTutorialSubSections != TutorialObjects.Length) //this is an error checker for out of bounds errors that will occur later
         {
             Debug.LogError("STOP, THEREWILL BE AN ISSUE UPCOMING");
         }
-        phase = Phase.Start;
-        if (UseRandomAssignment)
+        ActivePhase = Phase.Start;//set the first state as the start Phase
+        if (UseRandomAssignment) //if the type of trial conditions is assigned randomly, do that random assignment, via coin flip like randomness
         {
             if (UnityEngine.Random.value > 0.5f)
             {
@@ -192,7 +264,6 @@ public class MainObjectManager : MonoBehaviour
             else
             {
                 ControlFirst = false;
-
             }
 
             if (UnityEngine.Random.value > 0.5f)
@@ -206,103 +277,33 @@ public class MainObjectManager : MonoBehaviour
             }
         }
 
-        BeginCSVFiles();
+        BeginCSVFiles();//build the CSV files with their titles and headings before data is added to them 
     }
 
     // Update is called once per frame
     void Update()
     {
         CheckPhase();
-        
-        if (BetweenTrials)
-        {
-            if (_betweenTrialCountdown > 0)
-            {
-                _betweenTrialCountdown--;
-            }
-            else
-            {
-                BetweenTrials = false;
-                NextTrial();
-            }
-        }
-        if (_betweenTutorialSubSections)
-        {
-            if (_betweenTutorialSubsectionCountdown > 0)
-            {
-                _betweenTutorialSubsectionCountdown--;
-            }
-            else
-            {
-                _betweenTutorialSubSections = false;
-                NextSubTutPhase();
-                if (TutSubPhaseInd >= _numberOfTutorialSubSections)
-                {
-                    phase = Phase.Rest;
-                }
-                else
-                {
-                    RunTutorialSection();
-                }
-            }
-        }
-        if (_onExampleTutorialQuestion)
-        {
-            if (Time.time - _exQTimer < (_exQuestionWaitLength))
-            {
-                
-            }
-            else
-            {
-                _onExampleTutorialQuestion = false;
-                NextSubTutPhase();
-                RunTutorialSection();
-            }
-        }
-
-        // GroupAOrderedListObjects[6].testRot(); //DELETE
+        DoCountdowns();
     }
 
 
-
-    /// <summary>
-    /// Method <c>DetermineStimulusPhase</c> Sets Stimulus based on current settings. 
-    /// </summary>
-    void DetermineStimulusPhase()
-    {
-        if (!ControlFirst && _experimentInFirstPhase || ControlFirst && !_experimentInFirstPhase) // checking if the phase should have a control or stimulus
-        {
-
-            // and sets it to the proper stimulus
-            if (ConditionIsExtrisinsic)
-            {
-                ActiveStimulus = Stimulus.Extrisnic;
-
-            }
-            else
-            {
-                ActiveStimulus = Stimulus.Intrinsic;
-            }
-        }
-        else
-        {
-            ActiveStimulus = Stimulus.Control;
-        }
-    }
     /// <summary>
     /// Method <c>CheckPhase</c> Looks what the current phase is, and takes actions based on that. These are actions that are required every update.
     /// </summary>
-    void CheckPhase()
+    private void CheckPhase()
     {
-        if (phase != _previousPhase)
+        if (ActivePhase != _previousPhase) //if the phase has just changed
         {
-            SetNewPhaseText();
-            _previousPhase = phase;
-            Debug.Log(phase);
+            SetNewPhaseText(); //set text visuals
+            _previousPhase = ActivePhase; //set what the previous phase to be current phase
+            Debug.Log(ActivePhase); //Can delete this, just for clarity purpose
+            if (ActivePhase == Phase.Feedback)
+                Feedback.Add(new FeedbackData(Time.time, _previousPhase.ToString(), ActiveStimulus.ToString())); //if starting feedback phase, produce place for the data to be stored
         }
         else
         {
-            switch (phase)
+            switch (ActivePhase) //run a repeating action based on current phase
             {
                 case Phase.Start:
 
@@ -313,18 +314,20 @@ public class MainObjectManager : MonoBehaviour
                     break;
 
                 case Phase.Tutorial:
-                    _visualManager.SetTutorialVisuals(TutSubPhaseInd);
-                    _visualManager.ShowTutorialInstructions();
-                    switch (TutSubPhaseInd)
+                    _visualManager.SetTutorialVisuals(TutSubPhaseInd); //Do tutorial visuals
+                    _visualManager.ShowTutorialInstructions(); //and the text visuals
+                    switch (TutSubPhaseInd) //which "slide" of the tutorial is being viewed
                     {
                         case 19:
-                            if (Feedback.Count == 0)
+                            //these "slides" need the feedback data to be store
+                            if (Feedback.Count == 0)//this if statement makes sure only one data point is added
                             {
                                 Feedback.Add(new FeedbackData(Time.time, "Tutorial", "Baseline"));
                             }
                             break;
 
                         case 21:
+                            //these "slides" need to have the timer set for the example questions
                             if (!_onExampleTutorialQuestion)
                             {
                                 _onExampleTutorialQuestion = true;
@@ -335,7 +338,8 @@ public class MainObjectManager : MonoBehaviour
                             break;
 
                         case 22:
-                            if (Feedback.Count == 1)
+                            //these "slides" need the feedback data to be store
+                            if (Feedback.Count == 1)//this if statement makes sure only one data point is added
                             {
                                 Feedback.Add(new FeedbackData(Time.time, "Tutorial", "Easy"));
                             }
@@ -343,6 +347,7 @@ public class MainObjectManager : MonoBehaviour
                             break;
 
                         case 24:
+                            //these "slides" need to have the timer set for the example questions
                             if (!_onExampleTutorialQuestion)
                             {
                                 _onExampleTutorialQuestion = true;
@@ -352,7 +357,8 @@ public class MainObjectManager : MonoBehaviour
                             break;
 
                         case 25:
-                            if (Feedback.Count == 2)
+                            //these "slides" need the feedback data to be store
+                            if (Feedback.Count == 2) //this if statement makes sure only one data point is added
                             {
                                 Feedback.Add(new FeedbackData(Time.time, "Tutorial", "Hard"));
                             }
@@ -362,40 +368,63 @@ public class MainObjectManager : MonoBehaviour
                         default:
                             break;
                     }
-                    // CheckTutorialConditions();
+
+                    if (_betweenTutorialSubSections) //handles automatic movement between tutorial "slides" due to completion of example rotation problem
+                    {
+                        if (_betweenTutorialSubsectionCountdown > 0)
+                        {
+                            _betweenTutorialSubsectionCountdown--;
+                        }
+                        else
+                        {
+                            //if timer done
+                            _betweenTutorialSubSections = false;
+                            NextSubTutPhase(); //move to next phase
+                            if (TutSubPhaseInd >= _numberOfTutorialSubSections) //if we have reached the end of the tutorial
+                            {
+                                ActivePhase = Phase.Rest; //move to rest phase
+                                Debug.Log("DO WE EVER GET HERE?");
+                            }
+                            else
+                            {
+                                RunTutorialSection(); //otherwise run next tutorial seciton
+                            }
+                        }
+                    }
+                    //handles automatic movement between tutorial "slides" due to timers on example problems for PAAS scale
+
+                    if (!(Time.time - _exQTimer < (_exQuestionWaitLength)) && _onExampleTutorialQuestion)
+                    {
+                        //timer is done
+                        _onExampleTutorialQuestion = false;
+                        NextSubTutPhase(); //move to next phase
+                        RunTutorialSection(); //and run it
+                    }
+
+
                     break;
 
                 case Phase.PreExperimental:
-                    if (Time.time - _preExpTimer < (BaselineLengthSeconds))
+                    //baseline timer
+                    if (!(Time.time - _preExpTimer < (BaselineLengthSeconds)))
                     {
-                        //Debug.Log(Time.time - _preExpTimer);
-                    }
-                    else
-                    {
-                        phase = Phase.Rest;
+                        ActivePhase = Phase.Rest; //when timer is done move to new phase
                         DoRestingState(true);
                     }
                     break;
 
                 case Phase.Rest:
-                    int modulator = 1;
-                    if (OnShortRest)
-                    {
+                    //handles rest timer
+                    int modulator = 1; //controls short/long rest length
+                    if (_onShortRest)
                         modulator = 2;
-                    }
-                    if (Time.time - _restTimer < (RestLengthSeconds / modulator))
-                    {
 
-                    }
-                    else
-                    {
-                        phase = Phase.Feedback;
-                    }
+                    if (!(Time.time - _restTimer < (RestLengthSeconds / modulator)))
+                        ActivePhase = Phase.Feedback; //when timer is done, move to new phase                   
                     break;
 
                 case Phase.Experimental:
                     DetermineStimulusPhase();
-
                     break;
 
                 case Phase.Feedback:
@@ -414,12 +443,51 @@ public class MainObjectManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Method <c>DoCountDowns</c> Handles between trials counter, which is complicated, and needs its own function as it occurs between feedback/rest and experiment phase (i think!)
+    /// </summary>
+    private void DoCountdowns()
+    {
+        if (BetweenTrials)
+        {
+            if (_betweenTrialCountdown > 0)
+            {
+                _betweenTrialCountdown--;
+            }
+            else
+            {
+                //timer done
+                BetweenTrials = false;
+                NextTrial(); //run next trial
+            }
+        }
+
+    }
+
+    /// <summary>
+    /// Method <c>DetermineStimulusPhase</c> Sets Stimulus based on current settings, basically checks which portion of experiment we are currently in, and which stimulus that section should have
+    /// </summary>
+    void DetermineStimulusPhase()
+    {
+        if (!ControlFirst && _experimentInFirstSection || ControlFirst && !_experimentInFirstSection) // checking if the phase should have a control or stimulus
+        {
+            // and sets it to the proper stimulus based on initial settings
+            //also this is just a cleaner way to write simple if statements
+            if (ConditionIsExtrisinsic) ActiveStimulus = Stimulus.Extrisnic;
+            else ActiveStimulus = Stimulus.Intrinsic;
+        }
+        else
+        {
+            ActiveStimulus = Stimulus.Control;
+        }
+    }
+
+
+    /// <summary>
     /// Method <c>SetNewPhaseText</c> Runs switch based on phase and changes the text based on this.
     /// </summary>
     public void SetNewPhaseText() {
-        _visualManager.ResetTextToHeadPos();
-
-        switch (phase)
+        _visualManager.ResetTextToHeadPos();//make sure text is in the write place based on camera
+        switch (ActivePhase) //switch based on phase, and run correct text on visual manager (different class)
         {
             case Phase.Start:
                 _visualManager.RunStart();
@@ -430,7 +498,6 @@ public class MainObjectManager : MonoBehaviour
                 break;
 
             case Phase.Tutorial:
-                
                 break;
 
             case Phase.PreExperimental:
@@ -438,11 +505,11 @@ public class MainObjectManager : MonoBehaviour
                 break;
 
             case Phase.Rest:
-                _visualManager.RunRest(OnShortRest);
+                _visualManager.RunRest(_onShortRest);
                 break;
 
             case Phase.Experimental:
-                if (!ExperimentRunning)
+                if (!ExperimentRunning) //if the experiment hasnt started yet
                 {
                     _visualManager.RunExperimentIntro();
                 }
@@ -450,7 +517,6 @@ public class MainObjectManager : MonoBehaviour
 
             case Phase.Feedback:
                 _visualManager.RunFeedback();
-                Feedback.Add(new FeedbackData(Time.time, _previousPhase.ToString(), ActiveStimulus.ToString()));//hmm
                 break;
 
             case Phase.PostExperiment:
@@ -462,29 +528,33 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
-
+    /// <summary>
+    /// Method <c>RunPreExperiment</c> Handles the baseline aquisition.
+    /// </summary>
     public void RunPreExperiment() {
-        Debug.Log("HEREEREE");
         _preExpTimer = Time.time;
         if (!ConditionIsExtrisinsic)
         {
             if (!_intrinsicAudioPlayer.AudioOn)
             {
-                _intrinsicAudioPlayer.StartIntrinsicAudio(3f, 5, 2);
+                _intrinsicAudioPlayer.StartIntrinsicAudio(3f, 5, 2); //start intrinsic audio
             }
         }
         else
         {
-            _visualManager.ShowExtrinsicStimulus(true);
+            _visualManager.ShowExtrinsicStimulus(true); //turn on extrinsic visuals
         }
     }
 
+    /// <summary>
+    /// Method <c>DoRestingState</c> Handles the resting state, mainly important to just stop visuals and such
+    /// </summary>
     public void DoRestingState(bool ShortRest)
     {
         _intrinsicAudioPlayer.StopIntrinsicAudio();
         _visualManager.ShowExtrinsicStimulus(false);
         _restTimer = Time.time;
-        OnShortRest = ShortRest;
+        _onShortRest = ShortRest;
     }
 
     /// <summary>
@@ -493,15 +563,14 @@ public class MainObjectManager : MonoBehaviour
     public void BeginExperiment()
     {
         ExperimentRunning = true;
-        _visualManager.RunExperimentQuestionText(ActiveStimulus==Stimulus.Intrinsic);
+        _visualManager.RunExperimentQuestionText(ActiveStimulus == Stimulus.Intrinsic);
         RunTrial();
 
     }
 
 
-
     /// <summary>
-    /// Method <c>RunTrial</c> Runs the trial as calculated in <paramref name="ConvertTrialAndSectionCounterToIndex"/> from <paramref name="OrderedListOfTestObjects"/>
+    /// Method <c>RunTrial</c> Runs next trial
     /// </summary>
     void RunTrial()
     {
@@ -509,80 +578,96 @@ public class MainObjectManager : MonoBehaviour
         if (ActiveStimulus == Stimulus.Intrinsic)
         {
             if (!_intrinsicAudioPlayer.AudioOn)
-            {
-                _intrinsicAudioPlayer.StartIntrinsicAudio(3f, 5, 2);
-            }
-        }
-        if (ActiveStimulus == Stimulus.Extrisnic)
-        {
-            _visualManager.ShowExtrinsicStimulus(true);
+                _intrinsicAudioPlayer.StartIntrinsicAudio(3f, 5, 2); //runs intrinsic audio if its not already on
         }
         else
         {
-            _visualManager.ShowExtrinsicStimulus(false);
+            if (_intrinsicAudioPlayer.AudioOn)
+                _intrinsicAudioPlayer.StopIntrinsicAudio();
         }
-        if ((_experimentInFirstPhase && GroupAFirst) || (!_experimentInFirstPhase && !GroupAFirst)) // the two situations where it should be showing group A
+
+
+        if (ActiveStimulus == Stimulus.Extrisnic) //makes sure extrinsic visuals are on/off properaly
+            _visualManager.ShowExtrinsicStimulus(true);
+        else
+            _visualManager.ShowExtrinsicStimulus(false);
+
+
+
+        if ((_experimentInFirstSection && GroupAFirst) || (!_experimentInFirstSection && !GroupAFirst)) // the two situations where it should be showing group A
         {
             _activeTestingObject = GroupAOrderedListObjects[_trialCounter];
-            _activeTestingObject.ProduceObjects();
+            _activeTestingObject.ProduceModels();
         }
         else //otherwise it must be group B
         {
             _activeTestingObject = GroupBOrderedListObjects[_trialCounter];
-            _activeTestingObject.ProduceObjects();
+            _activeTestingObject.ProduceModels();
         }
 
-        Answers.Add(new AnswerData(Time.time, ActiveStimulus.ToString(), _activeTestingObject.Model1.name));
+        Answers.Add(new AnswerData(Time.time, ActiveStimulus.ToString(), _activeTestingObject.Model1.name)); //add new data file for answers, logging current time and name of testing object
+
+        //advance counters
         _trialCounter++;
         _trialSubCounter++;
     }
 
+    /// <summary>
+    /// Method <c>NextSubTutPhase</c> Advances counter and resets the visuals to camera position
+    /// </summary>
+    public void NextSubTutPhase()
+    {
+        TutSubPhaseInd++;
+        _visualManager.ResetTextToHeadPos();
+    }
 
+    /// <summary>
+    /// Method <c>RunTutorialSection</c> Runs tutorial section
+    /// </summary>
     public void RunTutorialSection()
     {
         Debug.Log("running tut section");
-        if (this.transform.childCount == 2)
+        if (this.transform.childCount == 2) //if there are already objects active, destroy them
         {
             Destroy(this.transform.GetChild(1).gameObject);
             Destroy(this.transform.GetChild(0).gameObject);
         }
-        _activeTutorialTestingObject = null;
-        if (TutorialObjects[TutSubPhaseInd] != null)
+        _activeTutorialTestingObject = null; //reset active object
+
+        if (TutorialObjects[TutSubPhaseInd] != null) //if there should be objects in this phase
         {
-            _activeTutorialTestingObject = TutorialObjects[TutSubPhaseInd];
-            _activeTutorialTestingObject.ProduceObjects();
+            _activeTutorialTestingObject = TutorialObjects[TutSubPhaseInd]; //assign them to active object
+            _activeTutorialTestingObject.ProduceModels(); //produce the models
         }
     }
 
+    /// <summary>
+    /// Method <c>CheckTutorialConditions</c> Checks if the two models that need to be matched have been matched or not, and if they have move to next "slide" of tutorial
+    /// </summary>
     public void CheckTutorialConditions()
     {
         if (_activeTutorialTestingObject != null)
         {
-            if (_activeTutorialTestingObject.ToBeMatched)
+            if (_activeTutorialTestingObject.ToBeMatched) //if there is an active object and its models need to be matched
             {
-                float angBetween =
+                float angBetween = //dont worry about this complicated math, it works 
 
                     (Vector3.Dot(_activeTutorialTestingObject.Model1.transform.up, _activeTutorialTestingObject.Model2.transform.up) * _activeTutorialTestingObject.MatchingVectors.x +
                     Vector3.Dot(_activeTutorialTestingObject.Model1.transform.right, _activeTutorialTestingObject.Model2.transform.right) * _activeTutorialTestingObject.MatchingVectors.y +
                     Vector3.Dot(_activeTutorialTestingObject.Model1.transform.forward, _activeTutorialTestingObject.Model2.transform.forward) * _activeTutorialTestingObject.MatchingVectors.z)
                     / (_activeTutorialTestingObject.MatchingVectors.x + _activeTutorialTestingObject.MatchingVectors.y + _activeTutorialTestingObject.MatchingVectors.z);
 
-                /* Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model1.transform.up, Color.red);
-                 Debug.DrawRay(_activeTutorialTestingObject.Model2.transform.position, _activeTutorialTestingObject.Model2.transform.up, Color.blue);
-
-                 */
-
-                if (angBetween > 0.85)
+                if (angBetween > 0.85) //if they are matching 
                 {
-                    NextSubTutPhase();
-                    Debug.Log("here we be");
+                    NextSubTutPhase(); //advance the phase
                     if (TutSubPhaseInd >= _numberOfTutorialSubSections)
                     {
-                        phase = Phase.Rest;
+                        ActivePhase = Phase.Rest;
+                        Debug.Log("DO WE EVER GET HERE?");
                     }
                     else
                     {
-                        RunTutorialSection();
+                        RunTutorialSection(); //and run it
                     }
                     _betweenTutorialSubSections = true;
                     _betweenTutorialSubsectionCountdown = 30;
@@ -591,16 +676,57 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
+
+
     /// <summary>
-    /// Method <c>AnswerQuestion</c> Recieves participant answer <paramref name="yesOrNo"/> and checks if it is correct, and runs a log attempt
-    /// <param name="yesOrNo"> Does the participant think the molecule is chiral or not, 0 is no, 1 is yes </param>
+    /// Method <c>SetBetweenTrials</c> Puts program between trials (clears off the old game objects, and adds a short pause before starting next trial). <paramref name="timeToWait"/> Controls how long to wait before moving to next trial.
+    /// This is the one input version which doesnt require there to have been an answer to a question given
+    /// </summary>
+    public void SetBetweenTrials(int timeToWait)
+    {
+        if (this.transform.childCount > 0) //remove active objects/models
+        {
+            Destroy(this.transform.GetChild(1).gameObject);
+            Destroy(this.transform.GetChild(0).gameObject);
+        }
+        _visualManager.ResetTextToHeadPos(); //reset visuals to camera
+
+        //set timer variables
+        BetweenTrials = true; 
+        _betweenTrialCountdown = timeToWait;
+    }
+
+    
+    /// <summary>
+    /// Method <c>SetBetweenTrials</c> Puts program between trials (clears off the old game objects, and adds a short pause before starting next trial). <paramref name="timeToWait"/> Controls how long to wait before moving to next trial.
+    /// This is the two input version which  requires there to have been an answer to a question given, by bool <paramref name="answerWasYes"/> which stores if they answered yes or no
+    /// </summary>
+    public void SetBetweenTrials(int timeToWait, bool answerWasYes)
+    {
+        if (this.transform.childCount > 0)//remove active objects/models
+        {
+            Destroy(this.transform.GetChild(1).gameObject);
+            Destroy(this.transform.GetChild(0).gameObject);
+        }
+        _visualManager.ResetTextToHeadPos(); //reset visuals to camera
+
+        //set timer variables
+        BetweenTrials = true;
+        _betweenTrialCountdown = timeToWait;
+
+        _visualManager.RunBetweenTrials(AnswerQuestion(answerWasYes)); //run the between trials visuals with with feedback for if the subject got the right answer or not,
+                                                                       //by feeding in their answer into AnswerQuestion, which returns a bool corresponding to iff they got question wrong or right
+    }
+
+    /// <summary>
+    /// Method <c>AnswerQuestion</c> Recieves participant answer <paramref name="didTheyAnswerYes"/> and checks if it is correct, and runs a log attempt
     /// </summary>
     public bool AnswerQuestion(bool didTheyAnswerYes)
     {
-        
+
         bool isCorrect;
 
-        if (didTheyAnswerYes == _activeTestingObject.Superimposable)
+        if (didTheyAnswerYes == _activeTestingObject.Superimposable) //check answer
         {
             isCorrect = true;
         }
@@ -608,78 +734,50 @@ public class MainObjectManager : MonoBehaviour
         {
             isCorrect = false;
         }
+
+        //log answer data in data structure
         Answers[Answers.Count - 1].TimeAnswerGiven = Time.time;
         Answers[Answers.Count - 1].CalcTimeDiff();
         Answers[Answers.Count - 1].AnswerCorrect = isCorrect;
-        return isCorrect;
+
+        return isCorrect; //return if they were correct or not
 
     }
 
     /// <summary>
-    /// Method <c>SetBetweenTrials</c> Puts program between trials (clears off the old game objects, and adds a short pause before starting next trial)
-    /// </summary>
-    public void SetBetweenTrials(int timeToWait)
-    {
-        if (this.transform.childCount > 0)
-        {
-            Destroy(this.transform.GetChild(1).gameObject);
-            Destroy(this.transform.GetChild(0).gameObject);
-        }
-        _visualManager.ResetTextToHeadPos();
-        BetweenTrials = true;
-        _betweenTrialCountdown = timeToWait;
-    }
-
-    /// <summary>
-    /// Method <c>SetBetweenTrials</c> Puts program between trials (clears off the old game objects, and adds a short pause before starting next trial)
-    /// </summary>
-    public void SetBetweenTrials(int timeToWait, bool answer)
-    {
-        if (this.transform.childCount > 0)
-        {
-            Destroy(this.transform.GetChild(1).gameObject);
-            Destroy(this.transform.GetChild(0).gameObject);
-        }
-        BetweenTrials = true;
-        _visualManager.ResetTextToHeadPos();
-        _betweenTrialCountdown = timeToWait;
-        _visualManager.RunBetweenTrials(AnswerQuestion(answer));
-    }
-
-    /// <summary>
-    /// Method <c>NextTrial</c> Moves the experiment to the next trial
+    /// Method <c>NextTrial</c> Moves the experiment to the next trial (via RunTrial() method), if its not time for there to be a feedback session, and if there is, getting that feedback session ready
     /// </summary>
     public void NextTrial() {
 
-        if (_trialCounter == NumberOfTrialsPerSection)
+        if (_trialCounter == NumberOfTrialsPerSection) //if at the end of a section
         {
             Debug.Log("Time for Feeback " + _trialCounter + "__" + NumberOfTrialsPerSection);
-            TimeForFeedback = true;
-            phase = Phase.Feedback;
-            _intrinsicAudioPlayer.StopIntrinsicAudio();
+            TimeForFeedback = true; //set that its time for feedback
+            ActivePhase = Phase.Feedback; //change the phase
+            _intrinsicAudioPlayer.StopIntrinsicAudio(); //stop audio
+            _visualManager.ShowExtrinsicStimulus(false); //and visuals
 
         }
-        else if (_trialSubCounter == NumberOfTrialsPerSubSection)
+        else if (_trialSubCounter == NumberOfTrialsPerSubSection) //if at the end of subsection (ie enough trials have passed for there to be a mid section PAAS scale check)
         {
             Debug.Log("Time for Feeback micro version " + _trialSubCounter + "__" + NumberOfTrialsPerSubSection);
 
-            TimeForFeedback = true;
-            phase = Phase.Feedback;
-            _onSubFeedback = true;
-            _intrinsicAudioPlayer.StopIntrinsicAudio();
-            _visualManager.ShowExtrinsicStimulus(false);
-
+            TimeForFeedback = true; //set that its time for feedback
+            ActivePhase = Phase.Feedback; //change the phase
+            _onSubFeedback = true; //note that we are doing sub feedback and not full feedback
+            _intrinsicAudioPlayer.StopIntrinsicAudio(); //stop audio 
+            _visualManager.ShowExtrinsicStimulus(false); //and visuals
         }
-        else
+        else //if its not time for feedback
         {
-            _visualManager.RunExperimentQuestionText(ActiveStimulus == Stimulus.Intrinsic);
+            _visualManager.RunExperimentQuestionText(ActiveStimulus == Stimulus.Intrinsic); //run experiment text, (checking if the text needs to change based on the active stimulus being intrinsic)
             Debug.Log("running next trial " + _trialCounter);
-            RunTrial();
+            RunTrial(); //advance to next trial
         }
     }
 
 
-    //
+    
     /// <summary>
     /// Method <c>GetFeedback</c> Get feedback.
     /// <param name="score"> Is the score from feedback </param>
@@ -687,83 +785,134 @@ public class MainObjectManager : MonoBehaviour
     public void GetFeedback(int score)
     {
 
-        Debug.Log(score + " feedback score");
+        //log score in the data 
         Feedback[Feedback.Count - 1].Score = score;
         Feedback[Feedback.Count - 1].TimeEnd = Time.time;
         Feedback[Feedback.Count - 1].CalcTimeDiff();
+        Debug.Log(score + " feedback score");
 
-        TimeForFeedback = false;
+        TimeForFeedback = false; //set that its no longer feedback time
 
-        if (phase == Phase.Tutorial)
+        if (ActivePhase == Phase.Tutorial)
         {
-            NextSubTutPhase();
+            NextSubTutPhase(); //if we are in the tutorial move forward with tutorial phase
         }
-        else
+        else //otherwise if we are in the experimental phase
         {
-            if (_onSubFeedback)
+            if (_onSubFeedback) //we have not reached end of a experimental section
             {
-                SetBetweenTrials(0);
-                phase = Phase.Experimental;
+                SetBetweenTrials(0); //move to next trial with no delay
+                ActivePhase = Phase.Experimental; //change phase
             }
-            else
+            else //if we have to start the next experimental section
             {
-                if (ExperimentRunning)
+                if (ExperimentRunning) //if the experiment is running
                 {
-                    _trialCounter = 0;
-                    if (_experimentInFirstPhase)
+                    _trialCounter = 0; //reset the trial counter
+                    if (_experimentInFirstSection) //if we were in the first section previously
                     {
                         Debug.Log("LOOK HERE " + Feedback[Feedback.Count - 1].NameOfSection);
-                        if (Feedback[Feedback.Count - 1].NameOfSection.Equals("Rest"))
+                        if (Feedback[Feedback.Count - 1].NameOfSection.Equals("Rest")) //if the feedback just came from the end of a rest section
                         {
-                            _experimentInFirstPhase = false;
-                            phase = Phase.Experimental;
-                            SetBetweenTrials(0);
+                            _experimentInFirstSection = false; //then we are not in the first section anymore, and should start second section
+                            ActivePhase = Phase.Experimental; //move into experimental section
+                            SetBetweenTrials(0); //run next section with no delay
                         }
-                        else
+                        else //if the last feedback didnt come from Rest (ie it must have come from an experiment)
                         {
-                            phase = Phase.Rest;
+                            ActivePhase = Phase.Rest; //do a rest phase
                             DoRestingState(true);
-                        }
-                        //LogCSVData();
+                        }                       
                     }
-                    else
+                    else //if we are in the second section
                     {
-                        phase = Phase.PostExperiment;
-                        LogCSVData();
+                        ActivePhase = Phase.PostExperiment; //end experiment
+                        LogCSVData(); //and write data to CSV files
                     }
                 }
-                else
+                else //if the experiment hasnt started yet (ie we havent ever entered the experimental phase yet)
                 {
-                    if (OnShortRest)
+                    if (_onShortRest) //if we just finished a short rest (THIS ENTIRE SECTION MIGHT BE UNREACHED CODE
                     {
-                        phase = Phase.Experimental;
-                        if (ExperimentRunning)
+                        Debug.Log("DO WE EVER GET HERE??");
+                        ActivePhase = Phase.Experimental; //move to experiment
+                        if (ExperimentRunning) //this is an error, need to bug check
                         {
                             SetBetweenTrials(0);
                         }
                     }
-                    else
+                    else //if we on a long rest
                     {
-                        phase = Phase.PreExperimental;
-                        RunPreExperiment();
+                        ActivePhase = Phase.PreExperimental; //go to baseline phase
+                        RunPreExperiment(); 
                     }
 
                 }
             }
+            //reset variables
             _trialSubCounter = 0;
             _onSubFeedback = false;
         }
 
     }
 
+    /// <summary>
+    /// Method <c>AddClickData</c> Takes the most recent click and does calculations on it versus the last audiotrigger to assign data
+    /// </summary>
+    public void AddClickData()
+    {
+        if (AudioTD.Count != 0) //if there has been an audio cue played
+        {
+            //figure out the time of the audio and the time of the click
+            float nearestTime = AudioTD[AudioTD.Count - 1].Time;
+            float clickTime = Clicks[Clicks.Count - 1].Time; 
 
+            //and assign it
+            Clicks[Clicks.Count - 1].TimeOfNearestAudio = nearestTime;
+            Clicks[Clicks.Count - 1].TimeToNearestAudio = clickTime - nearestTime;
 
+            //assign more info
+            if (!AudioTD[AudioTD.Count - 1].CueWasClickedFor) //tells most recent audio cue that it recieved a response
+            {
+                AudioTD[AudioTD.Count - 1].CueWasClickedFor = true;
+            }
+            if (Clicks.Count == 1) //if this is the first click ever
+            {
+                Clicks[Clicks.Count - 1].CorrectClick = true;
+            }
+            else //otherwise check if the click before this one occured before the last audio cue, and if it did, this cue is the first one for the recent audio cue and was correct, otherwise it was incorrect
+            {
+                if (Clicks[Clicks.Count - 2].Time < nearestTime)
+                {
+                    Clicks[Clicks.Count - 1].CorrectClick = true;
+                }
+                else
+                {
+                    Clicks[Clicks.Count - 1].CorrectClick = false;
 
-   
+                }
+            }
+            if (Clicks[Clicks.Count - 1].TimeToNearestAudio < MaxTimeForResponse) //was the click within the max response time?
+            {
+                Clicks[Clicks.Count - 1].TooSlow = false;
+            }
+            else
+            {
+                Clicks[Clicks.Count - 1].TooSlow = true;
+            }
+        }
+        else //if click was before audio cue has ever been played, set variables to indicate this
+        {
+            Clicks[Clicks.Count - 1].TimeToNearestAudio = -999;
+            Clicks[Clicks.Count - 1].CorrectClick = false;
+            Clicks[Clicks.Count - 1].TooSlow = false;
+        }
+
+    }
+
 
     /// <summary>
     /// Method <c>BeginCSVFile</c> Does the intro aspects of starting a CSV file, such as producing the file and adding the headers
-    /// 
     /// </summary>
     void BeginCSVFiles()
     {
@@ -775,8 +924,6 @@ public class MainObjectManager : MonoBehaviour
             data.WriteLine("Time Question Shown , Time Question Answered , Time Difference, Was Answer Correct?, Stimulus Type, Question Name ");
             data.Flush();
         }
-
-
 
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + _fileNameClicks + _dateInfo + ".csv"))
         {
@@ -819,12 +966,9 @@ public class MainObjectManager : MonoBehaviour
 
     /// <summary>
     /// Method <c>LogCSVData</c> Fills out the rest of the CSV files
-    /// 
     /// </summary>
     void LogCSVData()
     {
-
-        Debug.Log("WRITING CSV");
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + _fileNameAnswers + _dateInfo + ".csv"))
         {
             foreach (AnswerData aD in Answers)
@@ -835,11 +979,8 @@ public class MainObjectManager : MonoBehaviour
             data.Flush();
         }
 
-
-
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + _fileNameClicks + _dateInfo + ".csv"))
         {
-
             foreach (ClickData cD in Clicks)
             {
                 string toWrite;
@@ -857,7 +998,6 @@ public class MainObjectManager : MonoBehaviour
             data.Flush();
         }
 
-
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + _fileNameAudio + _dateInfo + ".csv"))
         {
             foreach (AudioTriggerData aTD in AudioTD) {
@@ -868,8 +1008,6 @@ public class MainObjectManager : MonoBehaviour
 
         using (StreamWriter data = File.AppendText(Application.dataPath + "/CSVOutput/" + _fileNameFeedback + _dateInfo + ".csv"))
         {
-
-
             int num = 1;
             foreach (FeedbackData fD in Feedback)
             {
@@ -877,7 +1015,6 @@ public class MainObjectManager : MonoBehaviour
                 data.WriteLine(toWrite);
                 num++;
             }
-
             data.Flush();
         }
 
@@ -895,7 +1032,9 @@ public class MainObjectManager : MonoBehaviour
         }
     }
 
-
+    /// <summary>
+    /// Method <c>GenerateCollatedData</c> takes all the data structures and turns them into one large collated data structure
+    /// </summary>
     public List<CollatedData> GenerateCollatedData()
     {
         List<CollatedData> retList = new List<CollatedData>();
@@ -922,59 +1061,9 @@ public class MainObjectManager : MonoBehaviour
         return retList;
     } 
 
-    /// <summary>
-    /// Method <c>AddClickData</c> Takes the most recent click and does calculations on it versus the last audiotrigger to assign data
-    /// </summary>
-    public void AddClickData()
-    {
-        if (AudioTD.Count != 0)
-        {
-            float nearestTime = AudioTD[AudioTD.Count - 1].Time;
-            float clickTime = Clicks[Clicks.Count - 1].Time;
-            Clicks[Clicks.Count - 1].TimeOfNearestAudio = nearestTime;
-            Clicks[Clicks.Count - 1].TimeToNearestAudio = clickTime - nearestTime;
-            if (!AudioTD[AudioTD.Count - 1].CueWasClickedFor)
-            {
-                AudioTD[AudioTD.Count - 1].CueWasClickedFor = true;
-            }
-            if (Clicks.Count == 1)
-            {
-                Clicks[Clicks.Count - 1].CorrectClick = true;
-            }
-            else
-            {
-                if (Clicks[Clicks.Count - 2].Time < nearestTime)
-                {
-                    Clicks[Clicks.Count - 1].CorrectClick = true;
-                }
-                else
-                {
-                    Clicks[Clicks.Count - 1].CorrectClick = false;
+    
 
-                }
-            }
-            if (Clicks[Clicks.Count - 1].TimeToNearestAudio < MaxTimeForResponse)
-            {
-                Clicks[Clicks.Count - 1].TooSlow = false;
-            }
-            else {
-                Clicks[Clicks.Count - 1].TooSlow = true;
-            }
-        }
-        else
-        {
-            Clicks[Clicks.Count - 1].TimeToNearestAudio = -999;
-            Clicks[Clicks.Count - 1].CorrectClick = false;
-            Clicks[Clicks.Count - 1].TooSlow = false;
-        }
-
-    }
-
-    public void NextSubTutPhase()
-    {
-        TutSubPhaseInd++;
-        _visualManager.ResetTextToHeadPos();
-    }
+    
     //private int GetIndexFromTrialAndSection()
     //{
     //    Debug.Log(String.Format("Number of trials per Section = {0}, Current Section = {1}, trial number for this section = {2}", NumberOfTrialsPerSection, _sectionCounter, _trialCounter));

@@ -4,43 +4,66 @@ using UnityEngine;
 
 public class TestingObject : MonoBehaviour
 {
-    //Variable communicates if this is a superimposable mirror image or not. This variable is directly used to check if test subjects answers are correct. 
+    /// <summary>
+    ///Variable communicates if this is a superimposable mirror image or not. This variable is directly used to check if test subjects answers are correct.  
+    /// </summary>
     public bool Superimposable;
 
-    //This is for the tutorial to check if it needs to be matched to progress to next portion
+    /// <summary>
+    ///This is for the tutorial to check if it needs to be matched to progress to next portion 
+    /// </summary>
     public bool ToBeMatched;
 
-    //the matching vectors specify which elements of symmetry the model has, ie NH3 would have 1 matching vector where a chiral compound would have 3
+    /// <summary>
+    ///the matching vectors specify which elements of symmetry the model has, ie NH3 would have 1 matching vector where a chiral compound would have 3 
+    /// </summary>
     public Vector3 MatchingVectors;
 
-    //Is the model intending to be mirrored or not
+    /// <summary>
+    ///Is the model intending to be mirrored or not 
+    /// </summary>
     [SerializeField]
     private bool _mirrored;
 
-    //Which axis the object needed to be mirrored
+    /// <summary>
+    ///Which axis the object needed to be mirrored 
+    /// </summary>
     [SerializeField]
     private Vector3 _mirroringVector;
 
-    //This holds the gameobject primary model used for visualising this model. When visualising this project. 
+    /// <summary>
+    ///This holds the gameobject primary model used for visualising this model. When visualising this project.  
+    /// </summary>
     [SerializeField]
     private GameObject _modelPrefab1;
 
-    //This holds the gameobject secondary optional model used for visualising this model. When visualising this project. Used mainly for constiutional isomers
+    /// <summary>
+    ///This holds the gameobject secondary optional model used for visualising this model. When visualising this project. Used mainly for constiutional isomers 
+    /// </summary>
     [SerializeField]
     private GameObject _modelPrefab2;
 
-    //This holds the amount of rotation needed to apply to make the two models different visually
+    /// <summary>
+    ///This holds the amount of rotation needed to apply to make the two models different visually 
+    /// </summary>
     [SerializeField]
     private float _rotationToApply;
 
-    //This holds the axis of rotation
+    /// <summary>
+    ///This holds the axis of rotation
+    /// </summary>
     [SerializeField]
     public Vector3 _rotationVec;
 
-    //This holds the distance to space the molecules from eachother
+    /// <summary>
+    ///This holds the distance to space the molecules from eachother
+    /// </summary>
     [SerializeField]
     private float _distance = .8f;
 
+    /// <summary>
+    /// Holds the models that are often molecules
+    /// </summary>
     public GameObject Model1, Model2;
 
 
@@ -57,7 +80,10 @@ public class TestingObject : MonoBehaviour
         
     }
 
-    public void ProduceObjects()
+    /// <summary>
+    /// Method <c>ProduceObjects</c> Generates the models from the stores models 
+    /// </summary>
+    public void ProduceModels()
     {
         Debug.Log(this.name);
         if (_modelPrefab2 == null) // if there is only one molecule

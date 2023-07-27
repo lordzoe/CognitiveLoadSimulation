@@ -2,21 +2,34 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Class <c>InputManager</c> This class is the core input controller, and passes information to the main object manager based on inputs. It tries to do as little thinking as possible except in interpretting
+/// inputs. It recieves only from the buttons on the paas scale images
+/// </summary>
 public class InputManager : MonoBehaviour
 {
-
+    /// <summary>
+    /// holds MainObjectManager
+    /// </summary>
     [SerializeField]
     private MainObjectManager _mainObjectManager;
 
+    /// <summary>
+    /// hold camera object, this should be set to the VR camera when in VR
+    /// </summary>
     [SerializeField]
     private Camera _camera;
 
+    /// <summary>
+    /// holds whichever object is currently being grabbed
+    /// </summary>
     private GameObject _attachedObject;
 
     private Vector2 _lastMousePos;
 
-    private float _mouseMovementAdjuster = 0.001f;
-
+    /// <summary>
+    /// Sets the time in frame updates between trials (90 is roughly 3 seconds)
+    /// </summary>
     private int _timeToWaitBetweenTrials = 90; //not in seconds 
     
     // Start is called before the first frame update
@@ -32,39 +45,39 @@ public class InputManager : MonoBehaviour
     {
         Vector2 mPos = Input.mousePosition;
 
+        //this all handles stuff around moving objects with mouse and should be deleted once VR is implemented
         if (_attachedObject != null)
         {
             Vector2 diffMPos = mPos - _lastMousePos;
-            //diffMPos *= _mouseMovementAdjuster;
             Vector3 directionVec = new Vector3(diffMPos.x, diffMPos.y, 0);
             float mag = -directionVec.magnitude;
             Vector3 crossVec = Vector3.Cross(Vector3.forward, directionVec);
             _attachedObject.transform.RotateAround(_attachedObject.transform.position, crossVec, mag);
-            // _attachedObject.transform.position += new Vector3(diffMPos.x,diffMPos.y,0);
         }
 
-        if (_mainObjectManager.phase == MainObjectManager.Phase.Tutorial)
+        if (_mainObjectManager.ActivePhase == MainObjectManager.Phase.Tutorial)        //if the active phase is the tutorial
+
         {
-            if (!Input.GetMouseButton(0) && !Input.GetMouseButton(1)) {
+            if (!Input.GetMouseButton(0) && !Input.GetMouseButton(1)) { //if there is no click, check if there is a matching, for VR this should check if thereis an object being actively held by the vr controller 
                 _mainObjectManager.CheckTutorialConditions();
             }
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0)) //do left click
             RunMainClick();
 
 
 
-        if (Input.GetMouseButtonDown(1))
+        if (Input.GetMouseButtonDown(1)) //do right click
             RunSecClick();
 
-        if (Input.GetMouseButtonUp(1))
+        if (Input.GetMouseButtonUp(1)) //when right click released, remove an attached object
             _attachedObject = null;
 
-        if (Input.GetMouseButtonDown(2))
+        if (Input.GetMouseButtonDown(2)) //jump to end of tutorial on scroll wheel click
         {
             Debug.Log("Pressed middle click.");
-            if (_mainObjectManager.phase == MainObjectManager.Phase.Tutorial)
+            if (_mainObjectManager.ActivePhase == MainObjectManager.Phase.Tutorial)
             {
                 EndTutorial();
             }
@@ -73,14 +86,16 @@ public class InputManager : MonoBehaviour
         _lastMousePos = mPos;
     }
 
-
+    /// <summary>
+    /// Method <c>TakeFeedback</c> This function is called by the buttons on the PAAS scale, to pass score to the main object manager, the score value is determined by which button is clicked on (see PAASObj class)
+    /// </summary>
     public void TakeFeedback(int score)
     {
         _mainObjectManager.GetFeedback(score);
     }
 
     /// <summary>
-    /// Method <c>RunMainClick</c> Runs the results of left clicks
+    /// Method <c>RunMainClick</c> Runs the results of left clicks. Mainly used for skipping through phases
     /// </summary>
     void RunMainClick()
     {
@@ -88,7 +103,7 @@ public class InputManager : MonoBehaviour
         Vector3 mousePos = Input.mousePosition;
         Debug.Log(mousePos.x);
         Debug.Log(mousePos.y);
-        switch (_mainObjectManager.phase)
+        switch (_mainObjectManager.ActivePhase) //switch checks current phase and moves to appropriate next phase based on that
         {
             case MainObjectManager.Phase.Start:
                 Debug.Log("phase was start");
@@ -100,23 +115,20 @@ public class InputManager : MonoBehaviour
                 EndCalibration();
                 break;
 
-            case MainObjectManager.Phase.Tutorial:
+            case MainObjectManager.Phase.Tutorial: 
                 Debug.Log(_mainObjectManager.TutSubPhaseInd);
-                if(_mainObjectManager.TutSubPhaseInd!=19&& _mainObjectManager.TutSubPhaseInd != 22&& _mainObjectManager.TutSubPhaseInd != 25)
+                if(_mainObjectManager.TutSubPhaseInd!=19&& _mainObjectManager.TutSubPhaseInd != 22&& _mainObjectManager.TutSubPhaseInd != 25) //if not on a tutorial phase that requires feedback
                 {
-                    Debug.Log("here");
                     _mainObjectManager.NextSubTutPhase();
                 }
-                if (_mainObjectManager.TutSubPhaseInd >= _mainObjectManager.TutorialObjects.Length)
+                if (_mainObjectManager.TutSubPhaseInd >= _mainObjectManager.TutorialObjects.Length) //if at the end of tutorial, end it
                 {
                     EndTutorial();
                 }
-                else
+                else //otherwise move to next section
                 {
                     _mainObjectManager.RunTutorialSection();
                 }
-
-
                 break;
 
             case MainObjectManager.Phase.PreExperimental:
@@ -131,17 +143,13 @@ public class InputManager : MonoBehaviour
             case MainObjectManager.Phase.Experimental:
                 if (!_mainObjectManager.BetweenTrials)
                 {
-                    if (_mainObjectManager.phase == MainObjectManager.Phase.Experimental && !_mainObjectManager.ExperimentRunning)
+                    if (_mainObjectManager.ActivePhase == MainObjectManager.Phase.Experimental && !_mainObjectManager.ExperimentRunning) //if the experiment hasnt begun yet
                     {
-                        BeginExperiment();
+                        BeginExperiment(); //start experiment
                         break;
                     }
-                    /*if (_mainObjectManager.TimeForFeedback && _mainObjectManager.ExperimentRunning)
-                    {
-                        ChangeToFeedBackPhase();
-                        break;
-                    }*/
-                    if (_mainObjectManager.ExperimentRunning && !_mainObjectManager.TimeForFeedback)
+                    
+                    if (_mainObjectManager.ExperimentRunning && !_mainObjectManager.TimeForFeedback) //if the experiment is running, answer a question based on click
                     {
                         AnswerExperiment(mousePos.x);
                         break;
@@ -168,24 +176,24 @@ public class InputManager : MonoBehaviour
 
 
     /// <summary>
-    /// Method <c>RunSecClick</c> Runs the results of right click
+    /// Method <c>RunSecClick</c> Runs the results of right click, mainly moving objects and doing audio triggers, this will be changed during VR integration so skipping commenting
     /// </summary>
     void RunSecClick()
     {
         Debug.Log("Pressed Secondary Button");
-        if (_mainObjectManager.phase == MainObjectManager.Phase.Experimental && _mainObjectManager.ActiveStimulus == MainObjectManager.Stimulus.Intrinsic)
+        if (_mainObjectManager.ActivePhase == MainObjectManager.Phase.Experimental && _mainObjectManager.ActiveStimulus == MainObjectManager.Stimulus.Intrinsic) 
         {
-            _mainObjectManager.Clicks.Add(new ClickData(Time.time, _mainObjectManager.phase.ToString()));
+            _mainObjectManager.Clicks.Add(new ClickData(Time.time, _mainObjectManager.ActivePhase.ToString()));
             _mainObjectManager.AddClickData();
         }
 
-        if (_mainObjectManager.phase == MainObjectManager.Phase.PreExperimental && !_mainObjectManager.ConditionIsExtrisinsic)
+        if (_mainObjectManager.ActivePhase == MainObjectManager.Phase.PreExperimental && !_mainObjectManager.ConditionIsExtrisinsic)
         {
-            _mainObjectManager.Clicks.Add(new ClickData(Time.time, _mainObjectManager.phase.ToString()));
+            _mainObjectManager.Clicks.Add(new ClickData(Time.time, _mainObjectManager.ActivePhase.ToString()));
             _mainObjectManager.AddClickData();
         }
 
-        if (_mainObjectManager.phase == MainObjectManager.Phase.Tutorial) {
+        if (_mainObjectManager.ActivePhase == MainObjectManager.Phase.Tutorial) {
 
             if (_attachedObject == null)
             {
@@ -208,27 +216,6 @@ public class InputManager : MonoBehaviour
                 _attachedObject = null;
             }
         }
-
-        //if (_mainObjectManager.phase == MainObjectManager.Phase.Feedback)
-        //{
-        //    Debug.Log("got here");
-        //    RaycastHit hit;
-        //    Ray ray = _camera.ScreenPointToRay(Input.mousePosition);
-
-        //    if (Physics.Raycast(ray, out hit))
-        //    {
-        //        Debug.Log("and here");
-        //        Transform objectHit = hit.transform;
-        //        PAASObj p = objectHit.gameObject.GetComponent<PAASObj>();
-        //        Debug.Log(objectHit.name);
-        //        Debug.Log(p.name);
-        //        if (p != null)
-        //        {
-        //            Debug.Log(p.Value+" clicked value");
-        //        }
-        //    }
-        //}
-
     }
 
 
@@ -237,21 +224,21 @@ public class InputManager : MonoBehaviour
     /// Method <c>EndStart</c> End Start Phase, and advance Phase to calibration.
     /// </summary>
     void EndStart() {
-        _mainObjectManager.phase = MainObjectManager.Phase.Calibration;
+        _mainObjectManager.ActivePhase = MainObjectManager.Phase.Calibration;
     }
 
     /// <summary>
     /// Method <c>EndCalibration</c> End Calibration Phase, and advance Phase to tutorial.
     /// </summary>
     void EndCalibration() {
-        _mainObjectManager.phase = MainObjectManager.Phase.Tutorial;
+        _mainObjectManager.ActivePhase = MainObjectManager.Phase.Tutorial;
     }
 
     /// <summary>
     /// Method <c>EndTutorial</c> End Tutorial Phase, and advance Phase to PreExperimental.
     /// </summary>
     void EndTutorial() {
-        _mainObjectManager.phase = MainObjectManager.Phase.Rest;
+        _mainObjectManager.ActivePhase = MainObjectManager.Phase.Rest;
         _mainObjectManager.DoRestingState(false);
 
     }
@@ -261,25 +248,16 @@ public class InputManager : MonoBehaviour
     /// </summary>
     void EndPreExperimental()
     {
-        _mainObjectManager.phase = MainObjectManager.Phase.Rest;
+        _mainObjectManager.ActivePhase = MainObjectManager.Phase.Rest;
         _mainObjectManager.DoRestingState(true);
     }
 
+    /// <summary>
+    /// Method <c>EndRestState</c> End Rest Phase, and advance Phase to Feedback.
+    /// </summary>
     void EndRestState()
     {
-        _mainObjectManager.phase = MainObjectManager.Phase.Feedback;
-        /*if (_mainObjectManager.OnShortRest) {
-            _mainObjectManager.phase = MainObjectManager.Phase.Experimental;
-            if (_mainObjectManager.ExperimentRunning)
-            {
-                _mainObjectManager.SetBetweenTrials();
-            }
-        }
-        else
-        {
-            _mainObjectManager.phase = MainObjectManager.Phase.PreExperimental;
-            _mainObjectManager.RunPreExperiment();
-        }*/
+        _mainObjectManager.ActivePhase = MainObjectManager.Phase.Feedback;
     }
 
     /// <summary>
@@ -290,44 +268,27 @@ public class InputManager : MonoBehaviour
         _mainObjectManager.BeginExperiment();
     }
 
-    
-
-    //STC PERHAPS THE ABOVE METHODS COULD BE REDUCED TO ONE, ADVANCE PHASE, BUT FOR RIGHT NOW IM KEEPING IT AS GENERAL AS POSSIBLE.
-    // yes it is inefficient, but these are like almost abstract methods right now, and i suspect they will be much more full by the end of things
-
-
-
-
-
-
     /// <summary>
     /// Method <c>ChangeToFeedBackPhase</c> Switch phase to feedback phase.
     /// </summary>
     void ChangeToFeedBackPhase()
     {
-            _mainObjectManager.phase = MainObjectManager.Phase.Feedback;
+            _mainObjectManager.ActivePhase = MainObjectManager.Phase.Feedback;
     }
 
-
-
-    
-
     /// <summary>
-    /// Method <c>AnswerExperiment</c> Checks which side of the screen the click is on, and then sends an answer to the experimental section based on that.
+    /// Method <c>AnswerExperiment</c> Checks which side of the screen the click is on, and then sends an answer to the experimental section based on that. This will be removed by VR integration
     /// </summary>
     void AnswerExperiment(float mouseX)
     {
         bool answerYes;
-        
-            if (mouseX < Screen.width / 2f)
-            {
-                answerYes = true;
-            }
-            else
-            {
-                answerYes = false;
-            }
-            _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials,answerYes);
+
+        if (mouseX < Screen.width / 2f)
+            answerYes = true;
+        else
+            answerYes = false;
+       
+       _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials,answerYes);
     }
 
 
