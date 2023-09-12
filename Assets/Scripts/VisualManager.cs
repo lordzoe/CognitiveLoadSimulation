@@ -209,12 +209,39 @@ public class VisualManager : MonoBehaviour
     /// <summary>
     /// Method <c>ShowTutorialInstructions</c> Handles text for tutorial.
     /// </summary>
-    public void ShowTutorialInstructions()
+    /*public void ShowTutorialInstructions()
     {
         _mainText.text = _activeTutorialInstruction;
         _mainText.fontSize = 36;
         _mainText.alignment = TextAlignmentOptions.TopLeft;
         _mainBackground.transform.localPosition = new Vector3(0,300,0);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_mainBackground.GetComponent<RectTransform>());
+    }*/
+
+    public void ShowTutorialInstructions()
+    {
+        _mainText.text = _activeTutorialInstruction;
+        _mainText.fontSize = 36;
+        _mainText.alignment = TextAlignmentOptions.TopLeft;
+        if (_activeTutorialInstruction.Length<12) { //safety check for short length
+            _mainBackground.transform.localPosition = new Vector3(0, 0, 0);
+        }
+        else
+        {
+            if (_activeTutorialInstruction.Substring(0, 12).Equals("To rate your")) ///if text matches the type that accompanies the PAAS with text
+            {
+                _mainBackground.transform.localPosition = new Vector3(0, 300, 0);
+            }
+            else if(_activeTutorialInstruction.Substring(0, 12).Equals("Thank you! C")|| _activeTutorialInstruction.Substring(0, 12).Equals("As practice,")) ///if text matches the type that accompanies the PAAS w/o text
+            {
+                _mainBackground.transform.localPosition = new Vector3(0, 150, 0);
+            }
+            else
+            {
+                _mainBackground.transform.localPosition = new Vector3(0, 0, 0);
+            }
+        }
+       
         LayoutRebuilder.ForceRebuildLayoutImmediate(_mainBackground.GetComponent<RectTransform>());
     }
 
