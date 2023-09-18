@@ -1,4 +1,4 @@
-using System.Collections;
+/*using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -291,9 +291,570 @@ public class InputManager : MonoBehaviour
        _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials,answerYes);
     }
 
+}*/
+
+/*using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using Valve.VR;
+
+public class InputManager : MonoBehaviour
+{
+    [SerializeField]
+    private MainObjectManager _mainObjectManager;
+
+    [SerializeField]
+    private Camera _camera;
+
+    private GameObject _attachedObject;
+    private int _timeToWaitBetweenTrials = 90;
+
+    public SteamVR_Action_Boolean grabGrip;
+    public SteamVR_Action_Boolean interactUI;
+    public SteamVR_Action_Boolean westDpad;
+    public SteamVR_Action_Boolean eastDpad;
+    public SteamVR_Action_Boolean centerDpad;
+    public SteamVR_Action_Boolean triggerPress;
+    public SteamVR_Behaviour_Pose leftHandPose;
+    public SteamVR_Behaviour_Pose rightHandPose;
+
+    void Start()
+    {
+        // Initialize SteamVR actions
+        grabGrip = SteamVR_Actions._default.GrabGrip;
+        interactUI = SteamVR_Actions._default.InteractUI;
+        westDpad = SteamVR_Actions._default.WestDpad;
+        eastDpad = SteamVR_Actions._default.EastDpad;
+        centerDpad = SteamVR_Actions._default.CenterDpad;
+    }
+
+    // Fields from ButtonMonitorGrip.cs
+    public LayerMask interactionLayers; // Specify which layers can be interacted with
+    public float maxDistance = 10.0f; // Maximum distance for the raycast
+    private GameObject targetObject; // The object currently being pointed at
+    private GameObject objectInHand; // The object currently being held
+
+    void Update()
+    {
+        // Handling GrabGrip action
+        PointAndDetect();
+
+        if (grabGrip.GetStateDown(SteamVR_Input_Sources.LeftHand) || grabGrip.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            if (targetObject)
+            {
+                GrabObject();
+            }
+            else
+            {
+                RaycastHit hit;
+                Ray ray = _camera.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2)); // center of the screen
+                if (Physics.Raycast(ray, out hit))
+                {
+                    _attachedObject = hit.transform.gameObject;
+                }
+            }
+        }
+        if (grabGrip.GetStateUp(SteamVR_Input_Sources.LeftHand) || grabGrip.GetStateUp(SteamVR_Input_Sources.RightHand))
+        {
+            if (objectInHand)
+            {
+                ReleaseObject();
+            }
+            else
+            {
+                _attachedObject = null;
+            }
+        }
+
+        void PointAndDetect()
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(leftHandPose.transform.position, leftHandPose.transform.forward, out hit, maxDistance, interactionLayers))
+            {
+                targetObject = hit.collider.gameObject;
+            }
+            else
+            {
+                targetObject = null;
+            }
+        }
+
+        private void GrabObject()
+        {
+            objectInHand = targetObject;
+            targetObject = null;
+
+            var joint = AddFixedJoint();
+            joint.connectedBody = objectInHand.GetComponent<Rigidbody>();
+        }
+
+        private void ReleaseObject()
+        {
+            if (GetComponent<FixedJoint>())
+            {
+                GetComponent<FixedJoint>().connectedBody = null;
+                Destroy(GetComponent<FixedJoint>());
+                objectInHand = null;
+            }
+        }
+
+        private FixedJoint AddFixedJoint()
+        {
+            FixedJoint fx = gameObject.AddComponent<FixedJoint>();
+            fx.breakForce = 2000;
+            fx.breakTorque = 2000;
+            return fx;
+        }
+
+        // Handling InteractUI action
+        if (interactUI.GetStateDown(SteamVR_Input_Sources.LeftHand) || interactUI.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            RunMainClick();
+        }
+
+        // Handling WestDpad and EastDpad actions
+        if (westDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || westDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            // Record "Yes" response
+            AnswerExperiment(true);
+        }
+        if (eastDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || eastDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            // Record "No" response
+            AnswerExperiment(false);
+        }
+
+        // Handling CenterDpad action
+        if (centerDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || centerDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            // Record that they heard letter "L"
+            _mainObjectManager.RecordLetterL();  
+        }
+
+        {
+        CheckControllerInput(leftHandPose);
+        CheckControllerInput(rightHandPose);
+        }
+
+        void CheckControllerInput(SteamVR_Behaviour_Pose controllerPose)
+        {
+        if (triggerPress.GetStateDown(controllerPose.inputSource))
+        {
+            HandleTriggerPress(controllerPose.transform);
+        }
+        }
+
+        void HandleTriggerPress(Transform controllerTransform)
+        {
+        RaycastHit hit;
+        if (Physics.Raycast(controllerTransform.position, controllerTransform.forward, out hit))
+        {
+            if (hit.transform.name.StartsWith("Sphere")) 
+            {
+                // Extracting the specific sphere number
+                int sphereNumber = int.Parse(hit.transform.name.Replace("Sphere", ""));
+                
+                // Here we assume you want to pass this as a score:
+                TakeFeedback(sphereNumber);
+            }
+        }
+        else 
+        {
+            RunMainClick();
+        }
+        }
+
+        public void TakeFeedback(int score)
+        {
+        _mainObjectManager.GetFeedback(score);
+        }
+
+        void RunMainClick()
+        {
+            Debug.Log("Pressed primary button.");
+
+            switch (_mainObjectManager.ActivePhase)
+            {
+                case MainObjectManager.Phase.Start:
+                    EndStart();
+                    break;
+
+                case MainObjectManager.Phase.Calibration:
+                    EndCalibration();
+                    break;
+
+                case MainObjectManager.Phase.Tutorial:
+                    EndTutorial();
+                    break;
+
+                case MainObjectManager.Phase.Rest:
+                    // Assuming you have another state to distinguish between resting states
+                    if (_mainObjectManager.IsPreExperimentalRest)
+                    {
+                        EndPreExperimental();
+                    }
+                    else
+                    {
+                        EndRestState();
+                    }
+                    break;
+
+                // Add other phases as necessary
+
+                default:
+                    Debug.LogWarning("Unexpected phase or end of sequence reached.");
+                    break;
+            }
+        }
+
+    /// Method <c>EndStart</c> End Start Phase, and advance Phase to calibration.
+    /// </summary>
+    void EndStart() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Calibration;
+    }
+
+    /// <summary>
+    /// Method <c>EndCalibration</c> End Calibration Phase, and advance Phase to tutorial.
+    /// </summary>
+    void EndCalibration() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Tutorial;
+    }
+
+    /// <summary>
+    /// Method <c>EndTutorial</c> End Tutorial Phase, and advance Phase to PreExperimental.
+    /// </summary>
+    void EndTutorial() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Rest;
+    _mainObjectManager.DoRestingState(false);
+    }
+
+    /// <summary>
+    /// Method <c>EndPreExperimental</c> End PreExperimental Phase, and advance Phase to Experimental.
+    /// </summary>
+    void EndPreExperimental() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Rest;
+    _mainObjectManager.DoRestingState(true);
+    }
+
+    /// <summary>
+    /// Method <c>EndRestState</c> End Rest Phase, and advance Phase to Feedback.
+    /// </summary>
+    void EndRestState() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Feedback;
+    }
+
+    /// <summary>
+    /// Method <c>BeginExperiment</c> Begin the experiment.
+    /// </summary>
+    void BeginExperiment() {
+    _mainObjectManager.BeginExperiment();
+    }
+
+    /// <summary>
+    /// Method <c>ChangeToFeedBackPhase</c> Switch phase to feedback phase.
+    /// </summary>
+    void ChangeToFeedBackPhase() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Feedback;
+    }
+
+    /// <summary>
+    /// Method <c>AnswerExperiment</c> Sends an answer to the experimental section based on the input boolean.
+    /// </summary>
+    /// <param name="answerYes">If true, the answer is "yes". Otherwise, the answer is "no".</param>
+    void AnswerExperiment(bool answerYes) {
+    _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials, answerYes);
+    }
+}
 
 
+
+/*make sure these functions are integrated into InputManager.cs
+
+Here are the Vive VR controller actions to integrate and link both InputManager.cs and ButtonMonitor.cs:
+1) GrabGrip: The user can point the controller at an object and press down continuously on the grip key to rotate the object from a distance.
+2) InteractUI: The user can move to the next phase by pressing the trigger key.
+3) West D-pad: The user can press the west key of the d-pad to record a "Yes" response.
+4) East D-pad: The user can press the east key of the d-pad to record a "No" response.
+5) Center D-pad: The user can press the center key of the d-pad to record that they heard letter "L" in the audio from an n-back(0) task
+
+Implement for both (left, right) Vive VR controllers
+Remove any mouse click control*/
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using Valve.VR;
+
+public class InputManager : MonoBehaviour
+{
+    [SerializeField]
+    private MainObjectManager _mainObjectManager;
+
+    [SerializeField]
+    private Camera _camera;
+
+    private GameObject _attachedObject;
+    private int _timeToWaitBetweenTrials = 90;
+
+    public SteamVR_Action_Boolean grabGrip;
+    public SteamVR_Action_Boolean interactUI;
+    public SteamVR_Action_Boolean westDpad;
+    public SteamVR_Action_Boolean eastDpad;
+    public SteamVR_Action_Boolean centerDpad;
+    public SteamVR_Action_Boolean triggerPress;
+    public SteamVR_Behaviour_Pose leftHandPose;
+    public SteamVR_Behaviour_Pose rightHandPose;
+
+    void Start()
+    {
+        // Initialize SteamVR actions
+        grabGrip = SteamVR_Actions._default.GrabGrip;
+        interactUI = SteamVR_Actions._default.InteractUI;
+        westDpad = SteamVR_Actions._default.WestDpad;
+        eastDpad = SteamVR_Actions._default.EastDpad;
+        centerDpad = SteamVR_Actions._default.CenterDpad;
+    }
+
+    // Fields from ButtonMonitorGrip.cs
+    public LayerMask interactionLayers; // Specify which layers can be interacted with
+    public float maxDistance = 10.0f; // Maximum distance for the raycast
+    private GameObject targetObject; // The object currently being pointed at
+    private GameObject objectInHand; // The object currently being held
+
+    void Update()
+    {
+        PointAndDetect();
+
+        HandleGrabGrip();
+        HandleInteractUI();
+        HandleDpadInputs();
+        CheckControllerInput(leftHandPose);
+        CheckControllerInput(rightHandPose);
+    }
+
+    void HandleGrabGrip()
+    {
+        if (grabGrip.GetStateDown(SteamVR_Input_Sources.LeftHand) || grabGrip.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            if (targetObject)
+            {
+                GrabObject();
+            }
+            else
+            {
+                RaycastHit hit;
+                Ray ray = _camera.ScreenPointToRay(new Vector2(Screen.width / 2, Screen.height / 2));
+                if (Physics.Raycast(ray, out hit))
+                {
+                    _attachedObject = hit.transform.gameObject;
+                }
+            }
+        }
+
+        if (grabGrip.GetStateUp(SteamVR_Input_Sources.LeftHand) || grabGrip.GetStateUp(SteamVR_Input_Sources.RightHand))
+        {
+            if (objectInHand)
+            {
+                ReleaseObject();
+            }
+            else
+            {
+                _attachedObject = null;
+            }
+        }
+    }
+
+    void HandleInteractUI()
+    {
+        if (interactUI.GetStateDown(SteamVR_Input_Sources.LeftHand) || interactUI.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            RunMainClick();
+        }
+    }
+
+    void HandleDpadInputs()
+    {
+        if (westDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || westDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            AnswerExperiment(true);
+        }
+
+        if (eastDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || eastDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            AnswerExperiment(false);
+        }
+
+        if (centerDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || centerDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        {
+            _mainObjectManager.RecordLetterL();
+        }
+    }
+
+        void PointAndDetect()
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(leftHandPose.transform.position, leftHandPose.transform.forward, out hit, maxDistance, interactionLayers))
+            {
+                targetObject = hit.collider.gameObject;
+            }
+            else
+            {
+                targetObject = null;
+            }
+        }
+
+        private void GrabObject()
+        {
+            objectInHand = targetObject;
+            targetObject = null;
+
+            var joint = AddFixedJoint();
+            joint.connectedBody = objectInHand.GetComponent<Rigidbody>();
+        }
+
+        private void ReleaseObject()
+        {
+            if (GetComponent<FixedJoint>())
+            {
+                GetComponent<FixedJoint>().connectedBody = null;
+                Destroy(GetComponent<FixedJoint>());
+                objectInHand = null;
+            }
+        }
+
+        private FixedJoint AddFixedJoint()
+        {
+            FixedJoint fx = gameObject.AddComponent<FixedJoint>();
+            fx.breakForce = 2000;
+            fx.breakTorque = 2000;
+            return fx;
+        }
+
+    void CheckControllerInput(SteamVR_Behaviour_Pose controllerPose)
+    {
+        if (triggerPress.GetStateDown(controllerPose.inputSource))
+        {
+            HandleTriggerPress(controllerPose.transform);
+        }
+    }
+
+    void HandleTriggerPress(Transform controllerTransform)
+    {
+        RaycastHit hit;
+        if (Physics.Raycast(controllerTransform.position, controllerTransform.forward, out hit))
+        {
+            if (hit.transform.name.StartsWith("Sphere"))
+            {
+                int sphereNumber = int.Parse(hit.transform.name.Replace("Sphere", ""));
+                TakeFeedback(sphereNumber);
+            }
+        }
+        else
+        {
+            RunMainClick();
+        }
+    }
+
+        public void TakeFeedback(int score)
+        {
+        _mainObjectManager.GetFeedback(score);
+        }
+
+        void RunMainClick()
+        {
+            Debug.Log("Pressed primary button.");
+
+            switch (_mainObjectManager.ActivePhase)
+            {
+                case MainObjectManager.Phase.Start:
+                    EndStart();
+                    break;
+
+                case MainObjectManager.Phase.Calibration:
+                    EndCalibration();
+                    break;
+
+                case MainObjectManager.Phase.Tutorial:
+                    EndTutorial();
+                    break;
+
+                case MainObjectManager.Phase.Rest:
+                    // Assuming you have another state to distinguish between resting states
+                    if (_mainObjectManager.IsPreExperimentalRest)
+                    {
+                        EndPreExperimental();
+                    }
+                    else
+                    {
+                        EndRestState();
+                    }
+                    break;
+
+                // Add other phases as necessary
+
+                default:
+                    Debug.LogWarning("Unexpected phase or end of sequence reached.");
+                    break;
+            }
+        }
+
+    /// Method <c>EndStart</c> End Start Phase, and advance Phase to calibration.
+    /// </summary>
+    void EndStart() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Calibration;
+    }
+
+    /// <summary>
+    /// Method <c>EndCalibration</c> End Calibration Phase, and advance Phase to tutorial.
+    /// </summary>
+    void EndCalibration() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Tutorial;
+    }
+
+    /// <summary>
+    /// Method <c>EndTutorial</c> End Tutorial Phase, and advance Phase to PreExperimental.
+    /// </summary>
+    void EndTutorial() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Rest;
+    _mainObjectManager.DoRestingState(false);
+    }
+
+    /// <summary>
+    /// Method <c>EndPreExperimental</c> End PreExperimental Phase, and advance Phase to Experimental.
+    /// </summary>
+    void EndPreExperimental() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Rest;
+    _mainObjectManager.DoRestingState(true);
+    }
+
+    /// <summary>
+    /// Method <c>EndRestState</c> End Rest Phase, and advance Phase to Feedback.
+    /// </summary>
+    void EndRestState() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Feedback;
+    }
+
+    /// <summary>
+    /// Method <c>BeginExperiment</c> Begin the experiment.
+    /// </summary>
+    void BeginExperiment() {
+    _mainObjectManager.BeginExperiment();
+    }
+
+    /// <summary>
+    /// Method <c>ChangeToFeedBackPhase</c> Switch phase to feedback phase.
+    /// </summary>
+    void ChangeToFeedBackPhase() {
+    _mainObjectManager.ActivePhase = MainObjectManager.Phase.Feedback;
+    }
+
+    /// <summary>
+    /// Method <c>AnswerExperiment</c> Sends an answer to the experimental section based on the input boolean.
+    /// </summary>
+    /// <param name="answerYes">If true, the answer is "yes". Otherwise, the answer is "no".</param>
+    void AnswerExperiment(bool answerYes) {
+    _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials, answerYes);
+    }
     
-
-
 }
