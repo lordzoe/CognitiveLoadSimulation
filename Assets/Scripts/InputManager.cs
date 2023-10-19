@@ -585,6 +585,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Valve.VR;
+using static ButtonMonitorWest;
 
 public class InputManager : MonoBehaviour
 {
@@ -599,7 +600,7 @@ public class InputManager : MonoBehaviour
 
     public SteamVR_Action_Boolean grabGrip;
     public SteamVR_Action_Boolean interactUI;
-    public SteamVR_Action_Boolean westDpad;
+    public ButtonMonitorWest westDpad;
     public SteamVR_Action_Boolean eastDpad;
     public SteamVR_Action_Boolean centerDpad;
     public SteamVR_Action_Boolean triggerPress;
@@ -611,9 +612,9 @@ public class InputManager : MonoBehaviour
         // Initialize SteamVR actions
         grabGrip = SteamVR_Actions._default.GrabGrip;
         interactUI = SteamVR_Actions._default.InteractUI;
-        westDpad = SteamVR_Actions._default.WestDpad;
-        eastDpad = SteamVR_Actions._default.EastDpad;
-        centerDpad = SteamVR_Actions._default.CenterDpad;
+        westDpad = new ButtonMonitorWest();
+        eastDpad = new SteamVR_Action_Boolean();
+        //centerDpad = SteamVR_Actions._default.CenterDpad;
     }
 
     // Fields from ButtonMonitorGrip.cs
@@ -675,19 +676,21 @@ public class InputManager : MonoBehaviour
 
     void HandleDpadInputs()
     {
-        if (westDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || westDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
+        if (westDpad.action.GetStateDown(SteamVR_Input_Sources.LeftHand) || westDpad.action.GetStateDown(SteamVR_Input_Sources.RightHand))
         {
+            Debug.Log("HandleDpadInputs: westPad is clicked");
             AnswerExperiment(true);
         }
 
         if (eastDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || eastDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
         {
+            Debug.Log("Maybe don't need the button monitor west?");
             AnswerExperiment(false);
         }
 
         if (centerDpad.GetStateDown(SteamVR_Input_Sources.LeftHand) || centerDpad.GetStateDown(SteamVR_Input_Sources.RightHand))
         {
-            _mainObjectManager.RecordLetterL();
+            //_mainObjectManager.RecordLetterL();
         }
     }
 
@@ -781,14 +784,14 @@ public class InputManager : MonoBehaviour
 
                 case MainObjectManager.Phase.Rest:
                     // Assuming you have another state to distinguish between resting states
-                    if (_mainObjectManager.IsPreExperimentalRest)
+                    /*if (_mainObjectManager.IsPreExperimentalRest)
                     {
                         EndPreExperimental();
                     }
                     else
                     {
                         EndRestState();
-                    }
+                    }*/
                     break;
 
                 // Add other phases as necessary
@@ -856,5 +859,5 @@ public class InputManager : MonoBehaviour
     void AnswerExperiment(bool answerYes) {
     _mainObjectManager.SetBetweenTrials(_timeToWaitBetweenTrials, answerYes);
     }
-    
+
 }

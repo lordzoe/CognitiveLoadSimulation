@@ -6,7 +6,7 @@ using Valve.VR;
 
 public class ButtonMonitorWest : MonoBehaviour
 {
-    public SteamVR_Action_Boolean action;
+    public SteamVR_Action_Boolean action = new SteamVR_Action_Boolean();
     public SteamVR_Input_Sources inputSource = SteamVR_Input_Sources.Any;
 
     void OnEnable()
@@ -14,6 +14,10 @@ public class ButtonMonitorWest : MonoBehaviour
         if (action != null)
         {
             action.AddOnChangeListener(OnActionPressedOrReleased, inputSource);
+        }
+        else
+        {
+            Debug.Log("ButtonMonitorWest: Action is null!");
         }
     }
 
@@ -36,4 +40,5 @@ public class ButtonMonitorWest : MonoBehaviour
             Debug.Log("Action was pressed or released");
         }
     }
+
 }
